@@ -106,6 +106,12 @@ dotnet build src/WHB04B_pendant/WHB04B_pendant.csproj -c Release
 dotnet build tools/Whb04bTest/Whb04bTest.csproj -c Release
 ```
 
+## Publishing a release
+
+On GitHub, open **Actions → build → Run workflow**, enter a version such as `v0.4.4`, and
+run it on `main`. The workflow builds the plugin, creates the tag and publishes a release with
+the DLL and a zip containing the test tool. Pushing a `v*` tag does the same.
+
 ## Repository layout
 
 | Path | What |
