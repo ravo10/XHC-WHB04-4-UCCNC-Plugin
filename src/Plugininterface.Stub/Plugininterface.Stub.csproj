@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compile-time stand-in for UCCNC's own Plugininterface.dll (v1.0.0.0, unsigned).
+    Only the members the plugin calls are declared, with the exact signatures
+    taken from the stock UCCNC plugins. NEVER copy this DLL into the UCCNC
+    folder: UCCNC already ships the real one.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net40</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>Plugininterface</AssemblyName>
+    <RootNamespace>Plugininterface</RootNamespace>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

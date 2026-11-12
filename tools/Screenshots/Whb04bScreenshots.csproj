@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Renders the plugin's settings window with demo data and saves PNG screenshots.
+       Usage: Whb04bScreenshots.exe <uccnc_buttons.txt> <output folder> -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net40</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>Whb04bScreenshots</AssemblyName>
+    <RootNamespace>Whb04bScreenshots</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WHB04B_pendant\WHB04B_pendant.csproj" />
+    <!-- Here the stub IS copied: it stands in for UCCNC with demo data. -->
+    <ProjectReference Include="..\..\src\Plugininterface.Stub\Plugininterface.Stub.csproj" />
+  </ItemGroup>
+
+</Project>

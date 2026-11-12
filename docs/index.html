@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WHB04B-4 UCCNC Plugin</title>
+<meta name="description" content="Free UCCNC plugin for the XHC WHB04B-4 wireless MPG pendant: jogging, keys, macros and the pendant LCD.">
+<link rel="icon" type="image/png" href="img/icon.png">
+<style>
+  :root {
+    --accent: #e8590c;
+    --accent-ink: #ffffff;
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --ink: #1f2328;
+    --muted: #5b616b;
+    --line: #e3e5e8;
+    --header: #2b2f36;
+    --code: #f0f1f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c;
+      --card: #1f2227;
+      --ink: #e8eaed;
+      --muted: #a2a8b1;
+      --line: #30343b;
+      --header: #0f1114;
+      --code: #2a2e34;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+
+  header.hero {
+    background: var(--header);
+    color: #fff;
+    border-bottom: 4px solid var(--accent);
+    padding: 40px 0 36px;
+  }
+  .hero .wrap { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+  .hero img { width: 96px; height: 96px; border-radius: 20px; }
+  .hero h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 4vw, 2.3rem); line-height: 1.2; }
+  .hero p { margin: 0; color: #c4c9d1; max-width: 620px; }
+  .buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+  .btn {
+    display: inline-block; padding: 10px 18px; border-radius: 8px;
+    text-decoration: none; font-weight: 600; border: 1px solid transparent;
+  }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.ghost { color: #fff; border-color: #5b616b; }
+
+  main { padding: 28px 0 48px; }
+  section { margin: 0 0 28px; }
+  h2 { font-size: 1.35rem; margin: 0 0 12px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px;
+  }
+  .shot { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--line); }
+  .caption { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .pendant { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .pendant img { width: 220px; max-width: 100%; border-radius: 10px; border: 1px solid var(--line); }
+  .pendant .text { flex: 1 1 300px; }
+
+  ul.features { margin: 0; padding-left: 20px; }
+  ul.features li { margin: 4px 0; }
+
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+
+  ol { margin: 0; padding-left: 22px; }
+  ol li { margin: 6px 0; }
+  code { background: var(--code); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+
+  .note {
+    border-left: 4px solid var(--accent); background: var(--card);
+    padding: 14px 16px; border-radius: 8px; border-top: 1px solid var(--line);
+    border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  footer { color: var(--muted); font-size: 0.85rem; padding: 24px 0 40px; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <img src="img/icon.png" alt="">
+    <div>
+      <h1>XHC WHB04B-4 pendant for UCCNC</h1>
+      <p>A free UCCNC plugin for the wireless WHB04B-4 MPG pendant. The stock "XHC-HB04"
+        plugin is for the older wired pendant and cannot read this one. Jog, run keys and
+        macros, and see your coordinates on the pendant's LCD.</p>
+      <div class="buttons">
+        <a class="btn primary" href="https://github.com/ravo10/XHC-WHB04-4-UCCNC-Plugin/releases/latest">Download latest release</a>
+        <a class="btn ghost" href="https://github.com/ravo10/XHC-WHB04-4-UCCNC-Plugin">Source on GitHub</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section>
+    <h2>The settings window</h2>
+    <div class="card">
+      <img class="shot" src="img/screenshot-settings.png" alt="Plugin settings window with the key table, options and connection status">
+      <div class="caption">Every key can be set, alone and with Fn held: a UCCNC function by name, a macro
+        number, any G/M-code, or a built-in pendant action. The status line shows the connection, mode,
+        knobs and the last jog command.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What it does</h2>
+    <div class="card pendant">
+      <img src="img/whb04b-4.jpg" alt="XHC WHB04B-4 wireless pendant">
+      <div class="text">
+        <ul class="features">
+          <li><strong>Jogging</strong> on X, Y, Z and A with the wheel: multi step, single step
+            (0.001 – 1.0 per click) and a rate-limited continuous mode.</li>
+          <li><strong>Keys</strong>: Reset, Stop, Start/Pause, the Fn functions (feed and spindle
+            override, home, safe Z, go to zero, spindle, probe Z) and 10 free macro keys.</li>
+          <li><strong>Pendant LCD</strong>: work or machine coordinates, step/continuous mode, feed
+            and spindle values.</li>
+          <li><strong>UCCNC screen sync</strong>: the jog panel follows the pendant's mode, step size
+            and axis.</li>
+          <li><strong>Per-axis wheel direction</strong>, set from the settings window.</li>
+          <li><strong>Diagnostics</strong>: live status and an optional debug log.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Default keys</h2>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Key</th><th>Pressed alone</th><th>With Fn held</th></tr></thead>
+        <tbody>
+          <tr><td>RESET</td><td>UCCNC Reset</td><td>–</td></tr>
+          <tr><td>Stop</td><td>Stop G-code and pendant jogging</td><td>–</td></tr>
+          <tr><td>Start/Pause</td><td>Cycle start / feed hold</td><td>–</td></tr>
+          <tr><td>Macro-1 / Macro-2</td><td>Free</td><td>Feed override + / −</td></tr>
+          <tr><td>Macro-3 / Macro-4</td><td>Free</td><td>Spindle override + / −</td></tr>
+          <tr><td>Macro-5 (M-HOME)</td><td>Free</td><td>Home all</td></tr>
+          <tr><td>Macro-6 (Safe-Z)</td><td>Free</td><td>Go to safe Z</td></tr>
+          <tr><td>Macro-7 (W-HOME)</td><td>Free</td><td>Go to work zero</td></tr>
+          <tr><td>Macro-8 (S-ON/OFF)</td><td>Free</td><td>Spindle on/off</td></tr>
+          <tr><td>Macro-9 (Probe-Z)</td><td>Free</td><td>Tool length measurement (M31)</td></tr>
+          <tr><td>Macro-10</td><td>Free</td><td>LCD: work / machine coordinates</td></tr>
+          <tr><td>MPG</td><td>Continuous → multi step → single step</td><td>–</td></tr>
+          <tr><td>Step/Continuous</td><td>Toggle step / continuous</td><td>–</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Install</h2>
+      <ol>
+        <li>Download <code>XHC-WHB04B-4_pendant.dll</code> from the
+          <a href="https://github.com/ravo10/XHC-WHB04-4-UCCNC-Plugin/releases/latest">latest release</a>.</li>
+        <li>Close UCCNC and copy the DLL into <code>UCCNC\Plugins\</code>.</li>
+        <li>In UCCNC open <strong>Config → Configure plugins</strong>, enable
+          "XHC WHB04B-4 wireless pendant" and tick <em>Call startup</em>.</li>
+        <li>Disable the old "XHC-HB04 pendant" plugin.</li>
+        <li>Restart UCCNC, plug in the USB dongle and switch the pendant on.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>Test without UCCNC</h2>
+      <p><code>Whb04bTest.exe</code> (in the release zip) prints every key, knob and wheel
+        event and shows a demo position on the pendant LCD. Close it before starting UCCNC,
+        since only one program should use the pendant.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="note">
+      <strong>Safety.</strong> Keep the E-stop within reach when you first try the plugin. Continuous
+      mode never uses UCCNC's open-ended jog. Testing showed a plugin cannot reliably stop that jog.
+      Every wheel click is a short, fixed-length move with a rate limit, so the machine stops shortly
+      after the wheel does. The Stop key also stops pendant jogging.
+    </div>
+  </section>
+
+  <section>
+    <h2>How it works</h2>
+    <div class="card">
+      <p>The pendant's USB protocol and UCCNC's plugin API are documented in the repository:
+        <a href="https://github.com/ravo10/XHC-WHB04-4-UCCNC-Plugin/blob/main/docs/PROTOCOL.md">PROTOCOL.md</a>
+        and <a href="https://github.com/ravo10/XHC-WHB04-4-UCCNC-Plugin/blob/main/docs/UCCNC_API.md">UCCNC_API.md</a>.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    Independent project, not affiliated with or endorsed by XHC (ChengDu XinHeCheng Technology)
+    or CNCdrive. XHC, WHB04B, UCCNC and StepCraft are trademarks of their respective owners.
+  </div>
+</footer>
+
+</body>
+</html>

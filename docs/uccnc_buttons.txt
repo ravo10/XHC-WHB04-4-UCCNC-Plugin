@@ -1,0 +1,204 @@
+0	No function.
+100	Zeros the X axis position.
+101	Zeros the Y axis position.
+102	Zeros the Z axis position.
+103	Zeros the A axis position.
+104	Zeros the B axis position.
+105	Zeros the C axis position.
+106	Zeros All axis position.
+107	Runs the X axis to the home sensor.
+108	Runs the Y axis to the home sensor.
+109	Runs the Z axis to the home sensor.
+110	Runs the A axis to the home sensor.
+111	Runs the B axis to the home sensor.
+112	Runs the C axis to the home sensor.
+113	Runs all axis to the home sensor. The homing sequence is defined in the setup.
+114	Toggles the M3 spindle CW button.
+115	Toggles the M4 spindle CCW button.
+116	Toggles the M7 mist button.
+117	Toggles the M8 flood button.
+118	Selects the G54 coordinate offset.
+119	Selects the G55 coordinate offset.
+120	Selects the G56 coordinate offset.
+121	Selects the G57 coordinate offset.
+122	Selects the G58 coordinate offset.
+123	Selects the G59 coordinate offset.
+124	Starts an Open G-code file dialog.
+125	Closes the G-code fájl which is loaded.
+126	Opens the notepad to edit the loaded G-code file.
+127	Rewinds the loaded G-code file with jumping to the first row in the file.
+128	Makes a cyclic run on the loaded G-code file.
+129	Executes one line of code (the actual code line) of the loaded G-code file.
+130	Stops the G-code execution.
+131	Moves all axis to the zero position with a rapid linear interpolation movement.
+132	Increases the Feedrate override value.
+133	Decreases the Feedrate override value.
+134	Increases the spindle speed override value.
+135	Decreases the spindle speed override value.
+136	Zooms in the toolpath viewer.
+137	Zooms out the toolpath viewer.
+138	Zooms the contents in the toolpath viewer.
+139	Sets the toolpath to a 45° look viewing mode.
+140	Sets the toolpath to a right side look viewing mode.
+141	Sets the toolpath to a left side look viewing mode.
+142	Sets the toolpath to a top side look viewing mode.
+143	Sets the toolpath to Isometric viewing mode.
+144	Toggles the reset button.
+145	Toggles the offline button.
+146	Toggles the limits override button.
+147	Jogs the X axis to positive direction.
+148	Jogs the X axis to negative direction.
+149	Jogs the Y axis to positive direction.
+150	Jogs the Y axis to negative direction.
+151	Jogs the Z axis to positive direction.
+152	Jogs the Z axis to negative direction.
+153	Jogs the A axis to positive direction.
+154	Jogs the A axis to negative direction.
+155	Jogs the B axis to positive direction.
+156	Jogs the B axis to negative direction.
+157	Jogs the C axis to positive direction.
+158	Jogs the C axis to negative direction.
+159	Increases the jog rate.
+160	Decreases the jog rate.
+161	Sets the jog mode to continous.
+162	Sets the jog mode to stepping.
+164	Sets the jog distance when stepping mode to 0.01 Units.
+165	Sets the jog distance when stepping mode to 0.1 Units.
+166	Sets the jog distance when stepping mode to 1 Units.
+167	Saves all settings to the profile file.
+168	Applies the settings on the setup screens.
+169	Sets the G-code execution pointer to the line defined on the screen in the 128. labelfield.
+170	Offsets the actual position of the G54 coordinate system.
+171	Offsets the actual position of the G55 coordinate system.
+172	Offsets the actual position of the G56 coordinate system.
+173	Offsets the actual position of the G57 coordinate system.
+174	Offsets the actual position of the G58 coordinate system.
+175	Offsets the actual position of the G59 coordinate system.
+176	Clears the offset in the G54 coordinate system.
+177	Clears the offset in the G55 coordinate system.
+178	Clears the offset in the G56 coordinate system.
+179	Clears the offset in the G57 coordinate system.
+180	Clears the offset in the G58 coordinate system.
+181	Clears the offset in the G59 coordinate system.
+182	Clears the tool offset.
+183	Clears the tool offset.
+184	Clears the tool offset.
+185	Clears the tool offset.
+186	Clears the tool offset.
+187	Clears the tool offset.
+188	Lists the available profile file names in the 1.Listcomponent.
+189	Deletes the actually selected profile file.
+190	Loads the actually selected profile file.
+191	Create a new profile, the name of the profile is held in the 216.inputfield.
+192	Imports a Mach3 .xml setup file. The function start an open file dialog.
+193	Commands the machine to park position 1. (Code executed in Macro M200)
+194	Commands the machine to park position 2. (Code executed in Macro M201)
+195	Commands the machine to park position 3. (Code executed in Macro M202)
+196	Commands a tool length measurement. (Code executed in Macro M31)
+197	Toggles the position DROs between the machine coordinates and the actual offset coordinates view.
+198	Calibrates the steps per units value with travel measurement for the X-axis.
+199	Calibrates the steps per units value with travel measurement for the Y-axis.
+200	Calibrates the steps per units value with travel measurement for the Z-axis.
+201	Calibrates the steps per units value with travel measurement for the A-axis.
+202	Calibrates the steps per units value with travel measurement for the B-axis.
+203	Calibrates the steps per units value with travel measurement for the C-axis.
+204	Toggles the software limits enable function.
+205	Toggles the THC control enable function.
+218	Zeros the work timer.
+219	Clears the G92 offset coordinates.
+220	Selects the X axis for the MPG jog.
+221	Selects the Y axis for the MPG jog.
+222	Selects the Z axis for the MPG jog.
+223	Selects the A axis for the MPG jog.
+224	Selects the B axis for the MPG jog.
+225	Selects the C axis for the MPG jog.
+226	Selects the continous jog mode for the MPG.
+227	Selects the single step  jog mode for the MPG.
+228	Selects the multi step jog mode for the MPG.
+229	Switches the X axis positive direction jogging off (not recommended to call this function at all.)
+230	Switches the X axis negative direction jogging off (not recommended to call this function at all.)
+231	Switches the Y axis positive direction jogging off (not recommended to call this function at all.)
+232	Switches the Y axis negative direction jogging off (not recommended to call this function at all.)
+233	Switches the Z axis positive direction jogging off (not recommended to call this function at all.)
+234	Switches the Z axis negative direction jogging off (not recommended to call this function at all.)
+235	Switches the A axis positive direction jogging off (not recommended to call this function at all.)
+236	Switches the A axis negative direction jogging off (not recommended to call this function at all.)
+237	Switches the B axis positive direction jogging off (not recommended to call this function at all.)
+238	Switches the B axis negative direction jogging off (not recommended to call this function at all.)
+239	Switches the C axis positive direction jogging off (not recommended to call this function at all.)
+240	Switches the C axis negative direction jogging off (not recommended to call this function at all.)
+241	Sets the jog distance when stepping mode to 0.001 Units.
+501	Imports a dxf drawing file to UCCAM.
+502	Generates the toolpath in UCCAM.
+503	Creates the gcode in UCCAM.
+504	Switches the M3 spindle CW button on.
+505	Switches the M3 spindle CW button off.
+506	Switches the M4 spindle CCW button on.
+507	Switches the M4 spindle CCW button off.
+508	Switches the M7 mist button on.
+509	Switches the M7 mist button off.
+510	Switches the M8 flood button on.
+511	Switches the M8 flood button off.
+512	Switches the Reset button on.
+513	Switches the Reset button off.
+514	Switches the Offline button on.
+515	Switches the Offline button off.
+516	Switches the machine coordinates button on.
+517	Switches the machine coordinates button off.
+518	Switches the softlimits setting on.
+519	Switches the softlimits setting off.
+520	Switches the THC control on.
+521	Switches the THC control off.
+522	Toggles the feedhold button.
+523	Switches the feedhold button on.
+524	Switches the feedhold button off.
+525	Opens the plugin configuration window.
+526	Enters the screen editor mode.
+527	Saves all offset values to the profile file.
+528	Clears the Status message box.
+529	Switches the Anti Dive function for the THC on.
+530	Switches the Anti Dive function for the THC off.
+531	Toggles the Anti Dive function for the THC.
+532	Opens the macroloop configuration window.
+533	Switches the THC Delay function for the THC on.
+534	Switches the THC Delay function for the THC off.
+535	Toggles the Delay function for the THC.
+536	Switches the THC arcon virtual signal on. Can be used to emulate the THC arcon signal from keyboard.
+537	Switches the THC arcon virtual signal off. Can be used to emulate the THC arcon signal from keyboard.
+538	Switches the THC up virtual signal on. Can be used to emulate the THC up signal from keyboard.
+539	Switches the THC up virtual signal off. Can be used to emulate the THC up signal from keyboard.
+540	Switches the THC down virtual signal on. Can be used to emulate the THC down signal from keyboard.
+541	Switches the THC down virtual signal off. Can be used to emulate the THC down signal from keyboard.
+542	Switches the Anti Down function for the THC on.
+543	Switches the Anti Down function for the THC off.
+544	Toggles the Anti Down function for the THC.
+545	Switches the safe probe mode on.
+546	Switches the safe probe mode off.
+547	Toggles the safe probe mode.
+548	Opens the operator lock/unlock window.
+549	Opens the machine statistics window.
+550	Opens the Spindle pulleys selection window.
+551	Sets the file name to save the Digitized points to.
+552	Switches the jog safe probe mode on.
+553	Switches the jog safe probe mode off.
+554	Toggles the jog safe probe mode.
+555	Reloads the g-code file if a file is already loaded.
+556	Resets the jog rate field to 100%.
+557	Resets the feed override to 100%.
+558	Resets the spindle speed override to 100%.
+559	Switches the M1 optional stop on.
+560	Switches the M1 optional stop off.
+561	Toggles the M1 optional stop state.
+770	Shows the jog panel.
+771	Hides the jog panel.
+772	Toggles the jog panel visibility state.
+773	Opens the Spindle PID controller setup window.
+774	Locks the toolpath center to the TCP point.
+775	Unlocks the toolpath center to the TCP point.
+776	Toggles the TCP follow mode.
+777	Shows the toolpathZplate setup window.
+778	Shows the Cutter radius compensation warnings window.
+779	Opens the detailed tooltable window.
+780	Saves all the datas of the tool table to file.
+781	Clears the homed state of all home buttons.
+782	Closes the Reset warning and the Question forms if any of them is active.

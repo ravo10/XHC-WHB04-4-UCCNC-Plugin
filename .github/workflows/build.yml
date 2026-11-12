@@ -1,0 +1,56 @@
+name: build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build plugin
+        run: dotnet build src/WHB04B_pendant/WHB04B_pendant.csproj -c Release
+
+      - name: Build test tool
+        run: dotnet build tools/Whb04bTest/Whb04bTest.csproj -c Release
+
+      - name: Collect output
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          Copy-Item src/WHB04B_pendant/bin/Release/net40/XHC-WHB04B-4_pendant.dll out/
+          Copy-Item tools/Whb04bTest/bin/Release/net40/Whb04bTest.exe out/
+          if (Test-Path out/Plugininterface.dll) { throw "Stub Plugininterface.dll must not be shipped" }
+          Get-ChildItem out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XHC-WHB04B-4_pendant
+          path: out/
+
+      # Pushing a tag like v0.4.2 publishes a GitHub Release with the files.
+      - name: Zip release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: Compress-Archive -Path out/* -DestinationPath "XHC-WHB04B-4_pendant-${{ github.ref_name }}.zip"
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            XHC-WHB04B-4_pendant-${{ github.ref_name }}.zip
+            out/XHC-WHB04B-4_pendant.dll
+          generate_release_notes: true

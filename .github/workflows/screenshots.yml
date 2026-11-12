@@ -1,0 +1,49 @@
+name: screenshots
+
+# Renders the plugin's settings window with demo data on Windows and commits
+# docs/img/screenshot-settings.png when it changed.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/WHB04B_pendant/**"
+      - "tools/Screenshots/**"
+      - ".github/workflows/screenshots.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build screenshot tool
+        run: dotnet build tools/Screenshots/Whb04bScreenshots.csproj -c Release
+
+      - name: Render screenshots
+        shell: pwsh
+        run: |
+          $exe = "tools/Screenshots/bin/Release/net40/Whb04bScreenshots.exe"
+          $p = Start-Process -FilePath $exe -ArgumentList "`"$PWD/docs/uccnc_buttons.txt`"", "`"$PWD/docs/img`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Screenshot tool failed with exit code $($p.ExitCode)" }
+          Get-ChildItem docs/img
+
+      - name: Commit screenshots
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/img/screenshot-*.png
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "Update settings window screenshot [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+          } else {
+            Write-Host "Screenshot unchanged"
+          }

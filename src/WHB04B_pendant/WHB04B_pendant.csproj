@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- UCCNC loads plugins into a .NET Framework 4.x process. -->
+    <TargetFramework>net40</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>XHC-WHB04B-4_pendant</AssemblyName>
+    <RootNamespace>Plugins</RootNamespace>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Version>0.4.3</Version>
+    <AssemblyVersion>0.4.3.0</AssemblyVersion>
+    <FileVersion>0.4.3.0</FileVersion>
+    <Product>XHC WHB04B-4 pendant plugin for UCCNC</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
+
+  <!-- Build the protocol code into this DLL so the plugin is a single file. -->
+  <ItemGroup>
+    <Compile Include="..\Whb04b.Core\*.cs" Link="Core\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Lets tools/Screenshots render the settings window with demo data. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Whb04bScreenshots" />
+  </ItemGroup>
+
+  <!-- Window/header icon (optional): src/WHB04B_pendant/app.ico -->
+  <ItemGroup Condition="Exists('app.ico')">
+    <EmbeddedResource Include="app.ico" LogicalName="WHB04B.app.ico" />
+    <EmbeddedResource Include="..\..\docs\img\icon.png" LogicalName="WHB04B.header.png" />
+  </ItemGroup>
+
+  <!-- Compile against the stub, but never copy it: UCCNC has the real Plugininterface.dll. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Plugininterface.Stub\Plugininterface.Stub.csproj" Private="false" />
+  </ItemGroup>
+
+</Project>
