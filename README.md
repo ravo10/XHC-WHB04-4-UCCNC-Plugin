@@ -66,6 +66,12 @@ stops after the last short move.
 
 ## Install
 
+**Tested on Windows 11** with UCCNC on a StepCraft M700.
+
+**No driver needed.** The pendant's wireless USB receiver (433 MHz radio, not Bluetooth)
+is plug and play. Windows sets it up automatically as a standard USB HID device the first
+time you plug it in. The XHC CD and its Mach3 driver are not needed for UCCNC.
+
 1. Download `XHC-WHB04B-4_pendant.dll` from the
    [latest release](https://github.com/ravo10/XHC-WHB04-4-UCCNC-Plugin/releases/latest),
    or build it yourself (below).
@@ -75,7 +81,7 @@ stops after the last short move.
    startup*) for "XHC WHB04B-4 wireless pendant". Restart UCCNC when asked.
 4. Disable the old "XHC-HB04 pendant" plugin so the two don't compete for the
    dongle.
-5. Plug in the dongle and switch the pendant on.
+5. Plug in the wireless USB receiver and switch the pendant on.
 
 ## Testing
 
