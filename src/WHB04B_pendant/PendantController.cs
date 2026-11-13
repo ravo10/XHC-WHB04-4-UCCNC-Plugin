@@ -59,7 +59,9 @@ namespace Plugins
         private double _appliedFeedPct = -1;
         private double _stopPct;
         private DateTime _lastWheelLoopUtc = DateTime.MinValue;
-        private bool _showMachineCoords;
+        private bool _showMachineCoords;        // fallback only, used if UCCNC's machine coordinates LED can't be read
+        private const int LedMachineCoords = 62;  // UCCNC "Machine coordinates" button is on (UCR201 uses the same LED)
+        private const int BtnToggleMachineCoords = 197;
         private DateTime _nextConnectAttempt = DateTime.MinValue;
         private bool _wasConnected;
 
@@ -335,7 +337,10 @@ namespace Plugins
                     return;
 
                 case "TOGGLE_COORDS":
+                    // Toggle UCCNC's own Machine coordinates button; the LCD follows its LED,
+                    // so the pendant and the UCCNC screen always show the same coordinates.
                     _showMachineCoords = !_showMachineCoords;
+                    _uc.Callbutton(BtnToggleMachineCoords);
                     return;
 
                 case "ZERO_AXIS":
@@ -923,14 +928,18 @@ namespace Plugins
 
             try
             {
+                bool machine = _showMachineCoords;
+                try { machine = _showMachineCoords = _uc.GetLED(LedMachineCoords); }
+                catch { /* keep the last known state */ }
+
                 var d = new Whb04bDisplayData
                 {
                     Mode = _stepMode ? Whb04bDisplayMode.Step : Whb04bDisplayMode.Continuous,
-                    MachineCoordinates = _showMachineCoords,
+                    MachineCoordinates = machine,
                 };
 
                 bool abc = axis == Whb04bAxis.A || axis == Whb04bAxis.B || axis == Whb04bAxis.C;
-                if (_showMachineCoords)
+                if (machine)
                 {
                     d.Axis1 = abc ? _uc.GetAmachpos() : _uc.GetXmachpos();
                     d.Axis2 = abc ? _uc.GetBmachpos() : _uc.GetYmachpos();

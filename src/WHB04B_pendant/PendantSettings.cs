@@ -27,7 +27,7 @@ namespace Plugins
         JogButtons = 0,
         /// <summary>UCCNC's MPG jog (JogOnSpeed); stopped by selecting an MPG mode, which turns keyboard jog off.</summary>
         MpgJog = 1,
-        /// <summary>Short fixed-length moves; always stops, not smooth.</summary>
+        /// <summary>Short relative moves at a capped rate, like CNCdrive's UCR201 plugin; always stops. Default.</summary>
         ShortMoves = 2,
     }
 
@@ -69,7 +69,7 @@ namespace Plugins
         /// <summary>Continuous mode uses UCCNC's smooth jog (with the stop safety net) instead of short separate moves.</summary>
         public bool SmoothContinuous = true;             // replaced by ContinuousEngine (v0.5.0)
 
-        public ContinuousEngines ContinuousEngine = ContinuousEngines.JogButtons;
+        public ContinuousEngines ContinuousEngine = ContinuousEngines.ShortMoves;   // default since v0.5.1 (the UCR201 method)
 
         /// <summary>UCCNC field holding "Jog feed %" (0 = not found yet), found once by JogFeedFinder.</summary>
         public int JogFeedField;
@@ -155,7 +155,7 @@ namespace Plugins
                 s.RunOnMainThread = ReadBool(uc, "RunOnMainThread", s.RunOnMainThread);
                 s.WindowOnTop = ReadBool(uc, "WindowOnTop", s.WindowOnTop);
                 s.SmoothContinuous = ReadBool(uc, "SmoothContinuous", s.SmoothContinuous);
-                s.ContinuousEngine = (ContinuousEngines)ReadInt(uc, "ContinuousEngine", (int)(s.SmoothContinuous ? ContinuousEngines.JogButtons : ContinuousEngines.ShortMoves));
+                s.ContinuousEngine = (ContinuousEngines)ReadInt(uc, "ContinuousEngine", (int)ContinuousEngines.ShortMoves);
                 s.JogFeedField = ReadInt(uc, "JogFeedField", 0);
                 s.JogFeedFieldAS3 = ReadBool(uc, "JogFeedFieldAS3", false);
                 s.MirrorMpgButtons = ReadBool(uc, "MirrorMpgButtons", s.MirrorMpgButtons);
@@ -308,7 +308,7 @@ namespace Plugins
 
         public void Sanitize()
         {
-            if (!Enum.IsDefined(typeof(ContinuousEngines), ContinuousEngine)) ContinuousEngine = ContinuousEngines.JogButtons;
+            if (!Enum.IsDefined(typeof(ContinuousEngines), ContinuousEngine)) ContinuousEngine = ContinuousEngines.ShortMoves;
             if (StepSpeedPercent <= 0 || StepSpeedPercent > 100) StepSpeedPercent = 100;
             if (MaxDetentsPerLoop < 1) MaxDetentsPerLoop = 1;
             if (MaxDetentsPerLoop > 100) MaxDetentsPerLoop = 100;

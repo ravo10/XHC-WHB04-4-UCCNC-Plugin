@@ -181,7 +181,7 @@ namespace Plugins
                 K("MODE_SINGLE", "★ Pendant: single step jog mode"),
                 K("MODE_CYCLE", "★ Pendant: cycle continuous / multi / single"),
                 K("MODE_TOGGLE", "★ Pendant: toggle step / continuous"),
-                K("TOGGLE_COORDS", "★ Pendant LCD: work / machine coordinates"),
+                K("TOGGLE_COORDS", "★ Work / machine coordinates (UCCNC + LCD)"),
                 K("ZERO_AXIS", "★ Zero the axis selected on the knob"),
                 K("STOPJOG", "★ Stop pendant jog"),
             };
@@ -378,7 +378,7 @@ namespace Plugins
             _mirrorMpg.Text = "MPG key selects UCCNC's MPG buttons (keyboard jog off)";
             _engine.DropDownStyle = ComboBoxStyle.DropDownList;
             _engine.Width = 170;
-            _engine.Items.AddRange(new object[] { "UCCNC jog (keyboard-safe)", "MPG jog", "Short moves" });
+            _engine.Items.AddRange(new object[] { "UCCNC jog", "MPG jog", "Short moves (recommended)" });
             var revPanel = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
             revPanel.Controls.Add(new Label { Text = "Reverse wheel:", AutoSize = true, Margin = new Padding(3, 6, 3, 3) });
             for (int i = 0; i < _reverse.Length; i++)

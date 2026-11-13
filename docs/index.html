@@ -130,11 +130,11 @@
       <div class="text">
         <ul class="features">
           <li><strong>Jogging</strong> on X, Y, Z and A with the wheel: multi step, single step
-            (0.001 – 1.0 per click) and a smooth continuous mode with a verified stop.</li>
+            (0.001 – 1.0 per click) and a continuous mode that stops as soon as the wheel stops.</li>
           <li><strong>Keys</strong>: Reset, Stop, Start/Pause, the Fn functions (feed and spindle
             override, home, safe Z, go to zero, spindle, probe Z) and 10 free macro keys.</li>
-          <li><strong>Pendant LCD</strong>: work or machine coordinates, step/continuous mode, feed
-            and spindle values.</li>
+          <li><strong>Pendant LCD</strong>: work or machine coordinates (following UCCNC's
+            Machine coordinates button), step/continuous mode, feed and spindle values.</li>
           <li><strong>UCCNC screen sync</strong>: the jog panel follows the pendant's mode, step size
             and axis.</li>
           <li><strong>Per-axis wheel direction</strong>, set from the settings window.</li>
@@ -160,7 +160,7 @@
           <tr><td>Macro-7 (W-HOME)</td><td>Free</td><td>Go to work zero</td></tr>
           <tr><td>Macro-8 (S-ON/OFF)</td><td>Free</td><td>Spindle on/off</td></tr>
           <tr><td>Macro-9 (Probe-Z)</td><td>Free</td><td>Tool length measurement (M31)</td></tr>
-          <tr><td>Macro-10</td><td>Free</td><td>LCD: work / machine coordinates</td></tr>
+          <tr><td>Macro-10</td><td>Free</td><td>Work / machine coordinates (UCCNC and the LCD)</td></tr>
           <tr><td>MPG</td><td>MPG mode: continuous → multi step → single step (UCCNC keyboard jog off)</td><td>–</td></tr>
           <tr><td>Step/Continuous</td><td>Toggle step / continuous (UCCNC keyboard jog keeps working)</td><td>–</td></tr>
         </tbody>
@@ -195,10 +195,12 @@
 
   <section>
     <div class="note">
-      <strong>Safety.</strong> Keep the E-stop within reach when you first try the plugin. Continuous
-      mode uses UCCNC's own jog, the same as the jog arrows and the keyboard. It stops shortly after
-      the wheel stops, or at once on the Stop key. Every stop is checked against the machine position.
-      If the axis is still moving, a second stop method is used and then UCCNC Reset is pressed.
+      <strong>Safety.</strong> Keep the E-stop within reach when you first try the plugin. By default,
+      continuous mode sends short moves at a capped rate, the same method as CNCdrive's UCR-201 plugin,
+      so the axis stops right after the wheel stops, and at once on the Stop key. UCCNC's keyboard jog
+      keeps working alongside the pendant. Two other methods (UCCNC jog and MPG jog) can be chosen in
+      the settings; with those, every stop is checked against the machine position and UCCNC Reset is
+      pressed if the axis keeps moving.
     </div>
   </section>
 

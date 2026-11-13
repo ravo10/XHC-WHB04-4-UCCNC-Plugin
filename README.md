@@ -33,7 +33,7 @@ which uses a different USB protocol. That plugin can't read the wireless pendant
 | Fn + Macro-7 (W-HOME) | Go to work zero (131) |
 | Fn + Macro-8 (S-ON/OFF) | Spindle on/off (114) |
 | Fn + Macro-9 (Probe-Z) | Tool length measurement, M31 (196) |
-| Fn + Macro-10 | LCD toggles work ↔ machine coordinates (X ↔ X1) |
+| Fn + Macro-10 | Toggles UCCNC's Machine coordinates button (197). The LCD always follows that button (X ↔ X1), however it was switched |
 | Macro-1 … Macro-10 alone | Nothing by default. Set any UCCNC button code or G/M-code in the settings |
 | MPG | MPG mode: cycles continuous → multi step → single step and selects UCCNC's MPG cont./multi/single buttons (UCCNC keyboard jog is off in MPG mode) |
 | Step/Continuous | Toggles step ↔ continuous and selects UCCNC's Continous/Step buttons, so keyboard jogging keeps working |
@@ -64,16 +64,20 @@ Continuous mode has three methods (settings → **Continuous mode**):
 
 | Method | How it moves | How it stops | Keyboard jog |
 |---|---|---|---|
-| **UCCNC jog** (default) | UCCNC's own jog buttons, exactly like holding a jog arrow, at the speed knob's % (written to UCCNC's *Jog feed %*) | UCCNC's matching "jog off" button | keeps working |
+| **Short moves** (default, recommended) | short relative moves at a capped rate, the same method as CNCdrive's UCR-201 plugin | the last move ends | keeps working |
+| **UCCNC jog** | UCCNC's own jog buttons, exactly like holding a jog arrow, at the speed knob's % (written to UCCNC's *Jog feed %*) | UCCNC's matching "jog off" button | keeps working |
 | **MPG jog** | UCCNC's MPG jog (`JogOnSpeed`) | selecting *jog mode stepping* + *MPG multi* (the only way that stopped it in testing) | off while in MPG mode |
-| **Short moves** | short fixed-length moves | the last move ends | keeps working |
 
-The jog stops 0.25 s after the last wheel click (configurable), or at once when you press
+With **Short moves**, each wheel click adds a short move, and moves beyond the speed
+knob's rate are dropped, so the axis stops right after the wheel stops. This is the method
+that tested best on the StepCraft M700, including keyboard jogging alongside the pendant.
+
+With **UCCNC jog** or **MPG jog**, the jog stops 0.25 s after the last wheel click (configurable), or at once when you press
 Stop. **Every stop is checked against the machine position.** If the axis is still moving
 after 0.3 s (0.5 s at 100 % speed), the MPG stop is sent too, and after 0.8 s (1.0 s at
 100 %) the plugin presses UCCNC **Reset**. In the MPG family (MPG key) the MPG jog is used.
 
-The first time continuous mode is used, the plugin finds UCCNC's *Jog feed %* field by
+With **UCCNC jog**, the first time continuous mode is used, the plugin finds UCCNC's *Jog feed %* field by
 pressing UCCNC's "increase jog rate" and "decrease jog rate" buttons once and noting which
 field changed (about 2 s, the wheel is ignored meanwhile). The result is saved.
 
