@@ -35,8 +35,8 @@ which uses a different USB protocol. That plugin can't read the wireless pendant
 | Fn + Macro-9 (Probe-Z) | Tool length measurement, M31 (196) |
 | Fn + Macro-10 | LCD toggles work ↔ machine coordinates (X ↔ X1) |
 | Macro-1 … Macro-10 alone | Nothing by default. Set any UCCNC button code or G/M-code in the settings |
-| MPG | Cycles continuous → multi step → single step (like the UCR201 pendant) |
-| Step/Continuous | Toggles step ↔ continuous |
+| MPG | MPG mode: cycles continuous → multi step → single step and selects UCCNC's MPG cont./multi/single buttons (UCCNC keyboard jog is off in MPG mode) |
+| Step/Continuous | Toggles step ↔ continuous and selects UCCNC's Continous/Step buttons, so keyboard jogging keeps working |
 | Axis knob OFF/X/Y/Z/A | Selects the jog axis (OFF = wheel does nothing) |
 | Speed knob | Step modes: 0.001 / 0.01 / 0.1 / 1.0 per click; 60 % and 100 % also step 1.0 (single step: max one step per 0.2 s). Continuous: smooth jog at 2 / 5 / 10 / 30 / 60 / 100 % speed while the wheel turns |
 | Wheel | Jogs the selected axis |

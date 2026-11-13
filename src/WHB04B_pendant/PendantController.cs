@@ -38,6 +38,7 @@ namespace Plugins
 
         private bool _stepMode;
         private bool _singleStep;               // step mode: one step per click, rate limited
+        private bool _mpgUi;                    // true after the MPG key: mirror UCCNC's MPG buttons instead of Continous/Step
         private DateTime _lastSingleStepUtc = DateTime.MinValue;
         private double _contBudget;             // stepped continuous mode: distance allowed right now (rate limit)
 
@@ -296,27 +297,35 @@ namespace Plugins
                     }
                     return;
 
+                // Step/Continuous family: UCCNC's own Continous/Step jog buttons, so keyboard jogging keeps working.
                 case "MODE_CONT":
-                    SetMode(false, _singleStep);
+                    SetUiFamily(false);
+                    SetMode(false, false);
                     return;
 
                 case "MODE_STEP":
+                    SetUiFamily(false);
                     SetMode(true, false);
                     return;
 
+                case "MODE_TOGGLE":
+                    SetUiFamily(false);
+                    SetMode(!_stepMode, false);
+                    return;
+
+                // MPG family: UCCNC's MPG cont./multi/single buttons (UCCNC turns keyboard jogging off there).
                 case "MODE_SINGLE":
+                    SetUiFamily(true);
                     SetMode(true, true);
                     return;
 
-                case "MODE_TOGGLE":
-                    SetMode(!_stepMode, _singleStep);
-                    return;
-
                 case "MODE_CYCLE":
-                    // Like the UCR201 pendant: continuous -> multi step -> single step -> continuous
-                    if (!_stepMode) SetMode(true, false);
+                    // Like the UCR201 pendant: MPG continuous -> multi step -> single step -> continuous.
+                    // The first press from the Step/Continuous family starts at MPG continuous.
+                    if (!_mpgUi) { SetUiFamily(true); SetMode(false, false); }
+                    else if (!_stepMode) SetMode(true, false);
                     else if (!_singleStep) SetMode(true, true);
-                    else SetMode(false, _singleStep);
+                    else SetMode(false, false);
                     return;
 
                 case "TOGGLE_COORDS":
@@ -362,7 +371,20 @@ namespace Plugins
 
         private string ModeName
         {
-            get { return !_stepMode ? "CONTINUOUS" : (_singleStep ? "SINGLE STEP" : "MULTI STEP"); }
+            get { return (_mpgUi ? "MPG " : "") + (!_stepMode ? "CONTINUOUS" : (_singleStep ? "SINGLE STEP" : "MULTI STEP")); }
+        }
+
+        /// <summary>
+        /// Which UCCNC jog buttons mirror the pendant. In UCCNC, Continous / Step / MPG cont. /
+        /// MPG single / MPG multi are one group (the last pressed wins), and keyboard jogging only
+        /// works in Continous or Step. So the Step/Continuous key uses those two, the MPG key the MPG ones.
+        /// </summary>
+        private void SetUiFamily(bool mpg)
+        {
+            if (_mpgUi == mpg) return;
+            _mpgUi = mpg;
+            _syncedMode = -1; // re-press the matching UCCNC button
+            _log.Debug("Pendant mode family -> " + (mpg ? "MPG" : "Step/Continuous"));
         }
 
         private void ProcessWheel()
@@ -538,6 +560,7 @@ namespace Plugins
                 lock (_sync) { axis = _axis; feed = _feed; }
 
                 int mode = !_stepMode ? 0 : (_singleStep ? 2 : 1);
+                int modeKey = mode + (_mpgUi ? 10 : 0);
                 int axIdx = axis >= Whb04bAxis.X && axis <= Whb04bAxis.A ? (int)axis - 1 : -1;
 
                 if (!_mirrorPrimed)
@@ -545,23 +568,26 @@ namespace Plugins
                     // Do not touch UCCNC's jog panel when the plugin starts or reconnects:
                     // remember the pendant's current state and only mirror what the user changes on it.
                     if (feed == Whb04bFeedKnob.Unknown) return; // no report from the pendant yet
-                    _syncedMode = mode;
+                    _syncedMode = modeKey;
                     _syncedAxis = axIdx;
                     _syncedStep = StepIndex(feed);
                     _mirrorPrimed = true;
                     return;
                 }
-                if (mode != _syncedMode && _stopStage == 0)
+                if (modeKey != _syncedMode && _stopStage == 0)
                 {
-                    int code = _stepMode ? _catalog.JogStep : _catalog.JogContinuous;
-                    if (code >= 0) PressScreenButton(code, "jog mode " + (_stepMode ? "step" : "continuous"));
-
-                    // Also light "MPG cont." / "MPG multi" / "MPG single" (pressing a selector is harmless if already on).
+                    // One button only: these UCCNC buttons are one group and the last one pressed wins.
                     int mpg = mode == 0 ? _catalog.MpgContinuous : (mode == 1 ? _catalog.MpgMulti : _catalog.MpgSingle);
-                    if (mpg >= 0 && _settings.MirrorMpgButtons)
+                    if (_mpgUi && _settings.MirrorMpgButtons && mpg >= 0)
+                    {
                         PressScreenButton(mpg, mode == 0 ? "MPG cont." : (mode == 1 ? "MPG multi" : "MPG single"));
-
-                    _syncedMode = mode;
+                    }
+                    else
+                    {
+                        int code = _stepMode ? _catalog.JogStep : _catalog.JogContinuous;
+                        if (code >= 0) PressScreenButton(code, "jog mode " + (_stepMode ? "step" : "continuous"));
+                    }
+                    _syncedMode = modeKey;
                 }
 
                 int ax = axis >= Whb04bAxis.X && axis <= Whb04bAxis.A ? (int)axis - 1 : -1;

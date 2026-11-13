@@ -375,7 +375,7 @@ namespace Plugins
             _onTop.CheckedChanged += (s, e) => TopMost = _onTop.Checked;
             _mirror.Text = "Mirror pendant mode on UCCNC screen";
             _debug.Text = "Debug log";
-            _mirrorMpg.Text = "Also light the MPG cont./single/multi buttons";
+            _mirrorMpg.Text = "MPG key selects UCCNC's MPG buttons (keyboard jog off)";
             _smooth.Text = "Smooth continuous jog (stop is verified)";
             var revPanel = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
             revPanel.Controls.Add(new Label { Text = "Reverse wheel:", AutoSize = true, Margin = new Padding(3, 6, 3, 3) });
