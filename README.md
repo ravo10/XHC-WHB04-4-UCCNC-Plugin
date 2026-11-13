@@ -62,7 +62,7 @@ Settings are saved in the UCCNC profile under section `[WHB04B]`.
 
 Continuous mode jogs smoothly with UCCNC's `JogOnSpeed` while the wheel turns. A plugin
 cannot stop that jog with speed 0. Testing showed that pressing UCCNC's *jog mode stepping*
-and *MPG multi* buttons does stop it, so the plugin stops the jog that way 0.25 s after the
+button stops it (with *MPG multi* added if needed), so the plugin stops the jog that way 0.25 s after the
 last wheel click, or at once when you press Stop. **Every stop is checked against the
 machine position.** If the axis is still moving after 0.3 s (0.5 s at 100 % speed) the stop is
 sent again, and after 0.8 s (1.0 s at 100 %) the plugin presses UCCNC **Reset**.

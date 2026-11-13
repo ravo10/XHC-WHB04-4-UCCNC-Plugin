@@ -704,7 +704,11 @@ namespace Plugins
             _log.Debug("Smooth jog stop (" + reason + "), axis " + axis);
         }
 
-        private void SendSmoothStop(int axis, bool dir)
+        /// <summary>
+        /// First try: UCCNC's "jog mode stepping" button only (keeps UCCNC out of MPG mode, so keyboard
+        /// jogging keeps working). Escalation (alsoMpg): add "MPG multi", which also stopped the jog in testing.
+        /// </summary>
+        private void SendSmoothStop(int axis, bool dir, bool alsoMpg = false)
         {
             try
             {
@@ -715,7 +719,7 @@ namespace Plugins
                 int stepBtn = _catalog != null && _catalog.JogStep >= 0 ? _catalog.JogStep : 162;
                 int multiBtn = _catalog != null && _catalog.MpgMulti >= 0 ? _catalog.MpgMulti : 228;
                 _uc.Callbutton(stepBtn);
-                _uc.Callbutton(multiBtn);
+                if (alsoMpg) _uc.Callbutton(multiBtn);
                 _syncedMode = -1; // the jog-mode buttons are restored once the stop is confirmed
             }
             catch (Exception ex)
@@ -745,14 +749,14 @@ namespace Plugins
             {
                 _log.Debug("Smooth jog stopped after " + (int)sinceStop + " ms");
                 _stopStage = 0;
-                _syncedMode = -1; // restore the jog-mode buttons on the UCCNC screen
+                RestoreJogMode(); // at once, before any new wheel click starts a jog
                 return;
             }
             double brake = 2.0 * Math.Max(0, Math.Min(100, _stopPct)); // up to 200 ms extra at 100 %
             if (_stopStage == 1 && sinceStop > 300 + brake)
             {
                 _log.Write("WARNING: axis " + _stopAxis + " still moving " + (int)sinceStop + " ms after the jog stop, sending the stop again");
-                SendSmoothStop(_stopAxis, _stopDir);
+                SendSmoothStop(_stopAxis, _stopDir, true);
                 _stopStage = 2;
             }
             else if (_stopStage == 2 && sinceStop > 800 + brake)
@@ -765,6 +769,41 @@ namespace Plugins
             {
                 _stopStage = 0;
                 _syncedMode = -1;
+            }
+        }
+
+        private int ModeKey
+        {
+            get { return (!_stepMode ? 0 : (_singleStep ? 2 : 1)) + (_mpgUi ? 10 : 0); }
+        }
+
+        /// <summary>
+        /// Puts UCCNC's jog-mode button back to the pendant's mode after a stop (one button only:
+        /// Continous / Step, or the MPG button in the MPG family). Done even when screen mirroring is off,
+        /// because the stop itself changed UCCNC's jog mode.
+        /// </summary>
+        private void RestoreJogMode()
+        {
+            try
+            {
+                int mode = !_stepMode ? 0 : (_singleStep ? 2 : 1);
+                int mpg = _catalog == null ? -1 : (mode == 0 ? _catalog.MpgContinuous : (mode == 1 ? _catalog.MpgMulti : _catalog.MpgSingle));
+                if (_mpgUi && _settings.MirrorMpgButtons && mpg >= 0)
+                {
+                    PressScreenButton(mpg, "restore MPG mode");
+                }
+                else
+                {
+                    int code = _stepMode
+                        ? (_catalog != null && _catalog.JogStep >= 0 ? _catalog.JogStep : 162)
+                        : (_catalog != null && _catalog.JogContinuous >= 0 ? _catalog.JogContinuous : 161);
+                    PressScreenButton(code, "restore jog mode " + (_stepMode ? "step" : "continuous"));
+                }
+                _syncedMode = ModeKey;
+            }
+            catch (Exception ex)
+            {
+                _log.Write("Restoring the UCCNC jog mode failed: " + ex.Message);
             }
         }
 
