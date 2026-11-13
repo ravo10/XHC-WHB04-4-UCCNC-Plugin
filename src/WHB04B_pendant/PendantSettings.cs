@@ -27,7 +27,11 @@ namespace Plugins
 
         public bool DebugLog;
         /// <summary>Reverse the jog wheel per axis (X, Y, Z, A, B, C). X, Y and Z are reversed on the StepCraft M700.</summary>
-        public bool[] ReverseAxis = { true, true, true, false, false, false };
+        /// <summary>
+        /// Reverse the jog wheel per axis (X, Y, Z, A, B, C), on top of the built-in direction.
+        /// All false = the pendant's clockwise turn moves the axis in UCCNC's positive direction.
+        /// </summary>
+        public bool[] ReverseAxis = { false, false, false, false, false, false };
 
         public static readonly string[] AxisNames = { "X", "Y", "Z", "A", "B", "C" };
 
@@ -197,7 +201,22 @@ namespace Plugins
                         stop.Action = "STOPALL";
                         Write(uc, "Key_" + stop.Key, stop.Action);
                     }
-                    Write(uc, "SettingsVersion", "5");
+                }
+
+                // v0.4.5: the wheel direction is now flipped by default for every axis (like the stock HB04
+                // plugin), so "Reverse" means "reverse from the correct default". Profiles that saved the old
+                // checkboxes are inverted once, so every axis keeps moving exactly as before.
+                if (ReadInt(uc, "SettingsVersion", 1) < 6)
+                {
+                    if (Read(uc, "ReverseX", "?") != "?")
+                    {
+                        for (int i = 0; i < s.ReverseAxis.Length; i++)
+                        {
+                            s.ReverseAxis[i] = !s.ReverseAxis[i];
+                            Write(uc, "Reverse" + AxisNames[i], s.ReverseAxis[i] ? "1" : "0");
+                        }
+                    }
+                    Write(uc, "SettingsVersion", "6");
                 }
             }
             catch
@@ -229,7 +248,7 @@ namespace Plugins
             Write(uc, "FeedField", FeedFieldNumber.ToString(CultureInfo.InvariantCulture));
             Write(uc, "SpindleField", SpindleFieldNumber.ToString(CultureInfo.InvariantCulture));
             Write(uc, "SafeZField", SafeZFieldNumber.ToString(CultureInfo.InvariantCulture));
-            Write(uc, "SettingsVersion", "5");
+            Write(uc, "SettingsVersion", "6");
             foreach (var k in Keys)
             {
                 Write(uc, "Key_" + k.Key, k.Action ?? "");

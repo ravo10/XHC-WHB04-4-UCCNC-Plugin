@@ -375,6 +375,9 @@ namespace Plugins
 
             var s = _settings;
             int axisIndex = (int)axis - 1; // X=0 .. C=5
+            // The pendant counts clockwise as negative relative to UCCNC's axes (the stock HB04 plugin
+            // flips it too), so the wheel is flipped by default; "Reverse" flips it back per axis.
+            delta = -delta;
             if (axisIndex >= 0 && axisIndex < s.ReverseAxis.Length && s.ReverseAxis[axisIndex]) delta = -delta;
             if (delta != 0)
                 _lastWheelInfo = (delta > 0 ? "+" : "") + delta + " at " + DateTime.Now.ToString("HH:mm:ss");
