@@ -20,6 +20,17 @@ namespace Plugins
         public string FnAction;
     }
 
+    /// <summary>How continuous mode moves the machine.</summary>
+    internal enum ContinuousEngines
+    {
+        /// <summary>UCCNC's own jog buttons (like the jog arrows / keyboard); speed = UCCNC Jog feed %.</summary>
+        JogButtons = 0,
+        /// <summary>UCCNC's MPG jog (JogOnSpeed); stopped by selecting an MPG mode, which turns keyboard jog off.</summary>
+        MpgJog = 1,
+        /// <summary>Short fixed-length moves; always stops, not smooth.</summary>
+        ShortMoves = 2,
+    }
+
     /// <summary>Plugin settings, stored in the UCCNC profile under section [WHB04B].</summary>
     internal sealed class PendantSettings
     {
@@ -56,7 +67,13 @@ namespace Plugins
         public int ContinuousStopMs = 250;
 
         /// <summary>Continuous mode uses UCCNC's smooth jog (with the stop safety net) instead of short separate moves.</summary>
-        public bool SmoothContinuous = true;
+        public bool SmoothContinuous = true;             // replaced by ContinuousEngine (v0.5.0)
+
+        public ContinuousEngines ContinuousEngine = ContinuousEngines.JogButtons;
+
+        /// <summary>UCCNC field holding "Jog feed %" (0 = not found yet), found once by JogFeedFinder.</summary>
+        public int JogFeedField;
+        public bool JogFeedFieldAS3;
 
         /// <summary>Also light UCCNC's MPG cont./single/multi buttons when the pendant mode changes.</summary>
         public bool MirrorMpgButtons = true;
@@ -138,6 +155,9 @@ namespace Plugins
                 s.RunOnMainThread = ReadBool(uc, "RunOnMainThread", s.RunOnMainThread);
                 s.WindowOnTop = ReadBool(uc, "WindowOnTop", s.WindowOnTop);
                 s.SmoothContinuous = ReadBool(uc, "SmoothContinuous", s.SmoothContinuous);
+                s.ContinuousEngine = (ContinuousEngines)ReadInt(uc, "ContinuousEngine", (int)(s.SmoothContinuous ? ContinuousEngines.JogButtons : ContinuousEngines.ShortMoves));
+                s.JogFeedField = ReadInt(uc, "JogFeedField", 0);
+                s.JogFeedFieldAS3 = ReadBool(uc, "JogFeedFieldAS3", false);
                 s.MirrorMpgButtons = ReadBool(uc, "MirrorMpgButtons", s.MirrorMpgButtons);
                 s.MirrorOnScreen = ReadBool(uc, "MirrorOnScreen", s.MirrorOnScreen);
                 s.Checksum = (ChecksumMode)ReadInt(uc, "ChecksumMode", (int)s.Checksum);
@@ -256,6 +276,9 @@ namespace Plugins
             Write(uc, "RunOnMainThread", RunOnMainThread ? "1" : "0");
             Write(uc, "WindowOnTop", WindowOnTop ? "1" : "0");
             Write(uc, "SmoothContinuous", SmoothContinuous ? "1" : "0");
+            Write(uc, "ContinuousEngine", ((int)ContinuousEngine).ToString(CultureInfo.InvariantCulture));
+            Write(uc, "JogFeedField", JogFeedField.ToString(CultureInfo.InvariantCulture));
+            Write(uc, "JogFeedFieldAS3", JogFeedFieldAS3 ? "1" : "0");
             Write(uc, "MirrorMpgButtons", MirrorMpgButtons ? "1" : "0");
             Write(uc, "MirrorOnScreen", MirrorOnScreen ? "1" : "0");
             Write(uc, "ChecksumMode", ((int)Checksum).ToString(CultureInfo.InvariantCulture));
@@ -277,8 +300,15 @@ namespace Plugins
             }
         }
 
+        public void SaveJogFeedField(Plugininterface.Entry uc)
+        {
+            Write(uc, "JogFeedField", JogFeedField.ToString(CultureInfo.InvariantCulture));
+            Write(uc, "JogFeedFieldAS3", JogFeedFieldAS3 ? "1" : "0");
+        }
+
         public void Sanitize()
         {
+            if (!Enum.IsDefined(typeof(ContinuousEngines), ContinuousEngine)) ContinuousEngine = ContinuousEngines.JogButtons;
             if (StepSpeedPercent <= 0 || StepSpeedPercent > 100) StepSpeedPercent = 100;
             if (MaxDetentsPerLoop < 1) MaxDetentsPerLoop = 1;
             if (MaxDetentsPerLoop > 100) MaxDetentsPerLoop = 100;

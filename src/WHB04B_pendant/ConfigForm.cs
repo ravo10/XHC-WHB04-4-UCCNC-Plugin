@@ -127,7 +127,7 @@ namespace Plugins
         private readonly CheckBox _mainThread = new CheckBox();
         private readonly CheckBox _mirror = new CheckBox();
         private readonly CheckBox _mirrorMpg = new CheckBox();
-        private readonly CheckBox _smooth = new CheckBox();
+        private readonly ComboBox _engine = new ComboBox();
         private readonly NumericUpDown _stopMs = new NumericUpDown();
         private readonly CheckBox _startStep = new CheckBox();
         private readonly CheckBox _onTop = new CheckBox();
@@ -376,7 +376,9 @@ namespace Plugins
             _mirror.Text = "Mirror pendant mode on UCCNC screen";
             _debug.Text = "Debug log";
             _mirrorMpg.Text = "MPG key selects UCCNC's MPG buttons (keyboard jog off)";
-            _smooth.Text = "Smooth continuous jog (stop is verified)";
+            _engine.DropDownStyle = ComboBoxStyle.DropDownList;
+            _engine.Width = 170;
+            _engine.Items.AddRange(new object[] { "UCCNC jog (keyboard-safe)", "MPG jog", "Short moves" });
             var revPanel = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
             revPanel.Controls.Add(new Label { Text = "Reverse wheel:", AutoSize = true, Margin = new Padding(3, 6, 3, 3) });
             for (int i = 0; i < _reverse.Length; i++)
@@ -401,13 +403,14 @@ namespace Plugins
             AddFull(t, _onTop, ref r);
             AddFull(t, _mirror, ref r);
             AddFull(t, _mirrorMpg, ref r);
-            AddFull(t, _smooth, ref r);
+
             AddFull(t, revPanel, ref r);
             AddFull(t, _startStep, ref r);
             AddFull(t, _debug, ref r);
             AddFull(t, _mainThread, ref r);
             AddRow(t, "Step move speed %", _stepSpeed, ref r);
             AddRow(t, "Max wheel clicks per loop", _maxDetents, ref r);
+            AddRow(t, "Continuous mode", _engine, ref r);
             Num(_stopMs, 100, 1000);
             AddRow(t, "Smooth jog: stop after ms", _stopMs, ref r);
             AddRow(t, "Continuous: mm per click at 100%", _contStop, ref r);
@@ -497,7 +500,7 @@ namespace Plugins
             _startStep.Checked = _edit.StartInStepMode;
             _mainThread.Checked = _edit.RunOnMainThread;
             _mirrorMpg.Checked = _edit.MirrorMpgButtons;
-            _smooth.Checked = _edit.SmoothContinuous;
+            _engine.SelectedIndex = (int)_edit.ContinuousEngine;
             _stopMs.Value = Clamp(_stopMs, _edit.ContinuousStopMs);
             _checksum.SelectedIndex = (int)_edit.Checksum;
             _stepSpeed.Value = Clamp(_stepSpeed, _edit.StepSpeedPercent);
@@ -550,7 +553,10 @@ namespace Plugins
             _edit.StartInStepMode = _startStep.Checked;
             _edit.RunOnMainThread = _mainThread.Checked;
             _edit.MirrorMpgButtons = _mirrorMpg.Checked;
-            _edit.SmoothContinuous = _smooth.Checked;
+            _edit.ContinuousEngine = (ContinuousEngines)Math.Max(0, _engine.SelectedIndex);
+            _edit.JogFeedField = _controller.Settings.JogFeedField;       // found while the window was open
+            _edit.JogFeedFieldAS3 = _controller.Settings.JogFeedFieldAS3;
+            _edit.SmoothContinuous = _edit.ContinuousEngine != ContinuousEngines.ShortMoves;
             _edit.ContinuousStopMs = (int)_stopMs.Value;
             _edit.WindowOnTop = _onTop.Checked;
             _edit.Checksum = (ChecksumMode)Math.Max(0, _checksum.SelectedIndex);

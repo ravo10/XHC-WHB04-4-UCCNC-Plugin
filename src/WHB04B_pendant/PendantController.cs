@@ -53,6 +53,10 @@ namespace Plugins
         private double _stopLastPos;
         private DateTime _stopLastMoveUtc;
         private double _jogPct;                 // speed of the running smooth jog (for the stop check timing)
+        private int _jogKind;                   // JogKindMpg (JogOnSpeed) or JogKindButtons (UCCNC jog buttons 147..158)
+        private const int JogKindMpg = 0, JogKindButtons = 1;
+        private readonly JogFeedFinder _feedFinder = new JogFeedFinder();
+        private double _appliedFeedPct = -1;
         private double _stopPct;
         private DateTime _lastWheelLoopUtc = DateTime.MinValue;
         private bool _showMachineCoords;
@@ -192,7 +196,9 @@ namespace Plugins
             Whb04bAxis ax;
             Whb04bFeedKnob fk;
             lock (_sync) { ax = _axis; fk = _feed; }
-            LiveStatus = "Mode: " + ModeName + "   Axis knob: " + ax + "   Speed knob: " + fk +
+            string engine = _settings.ContinuousEngine == ContinuousEngines.ShortMoves ? "short moves"
+                : (_settings.ContinuousEngine == ContinuousEngines.MpgJog || _mpgUi ? "MPG jog" : "UCCNC jog buttons");
+            LiveStatus = "Mode: " + ModeName + " (continuous: " + engine + ")   Axis knob: " + ax + "   Speed knob: " + fk +
                          "   Last wheel: " + _lastWheelInfo + "\nLast jog: " + _lastJogCall;
         }
 
@@ -429,9 +435,11 @@ namespace Plugins
             // Every mode only ever sends short, fixed-length moves (AddLinearMoveRel).
             // UCCNC's open-ended JogOnSpeed could not be stopped from a plugin, so it is not used.
             double step;
-            if (!_stepMode && s.SmoothContinuous)
+            if (!_stepMode && s.ContinuousEngine != ContinuousEngines.ShortMoves)
             {
-                ProcessSmoothContinuous(delta, axisIndex, KnobPercent(feed) * s.ContinuousScalePercent / 100.0, now);
+                // In the MPG family UCCNC's own jog buttons are inactive, so MPG jog is used there.
+                int kind = (s.ContinuousEngine == ContinuousEngines.JogButtons && !_mpgUi) ? JogKindButtons : JogKindMpg;
+                ProcessSmoothContinuous(delta, axisIndex, KnobPercent(feed) * s.ContinuousScalePercent / 100.0, now, kind);
                 return;
             }
             if (_jogAxis >= 0) StopSmoothJog("mode changed");
@@ -663,23 +671,50 @@ namespace Plugins
         /// "jog mode stepping" (162) and "MPG multi" (228) buttons does stop it. Every stop is then
         /// checked against the machine position, and escalated up to Reset (see VerifyJogStopped).
         /// </summary>
-        private void ProcessSmoothContinuous(int delta, int axisIndex, double pct, DateTime now)
+        private void ProcessSmoothContinuous(int delta, int axisIndex, double pct, DateTime now, int kind)
         {
+            if (kind == JogKindButtons && !_feedFinder.IsDone(_settings))
+            {
+                // Find UCCNC's Jog feed % field once (about 2 s, machine idle). No jogging meanwhile.
+                _feedFinder.Step(_uc, _log, _settings);
+                if (delta != 0) Diag("Continuous: finding UCCNC's Jog feed % field (one time), wheel ignored for a moment");
+                return;
+            }
+
             if (delta != 0 && pct > 0)
             {
                 bool dir = delta > 0;
                 if (_stopStage > 0) return;                       // still confirming the last stop
-                if (_jogAxis >= 0 && (_jogAxis != axisIndex || _jogDir != dir))
+                if (_jogAxis >= 0 && (_jogAxis != axisIndex || _jogDir != dir || _jogKind != kind))
                 {
                     StopSmoothJog("direction or axis changed");   // the next clicks start the new direction
                     return;
                 }
-                int rc = _uc.JogOnSpeed(axisIndex, dir, pct);
-                if (_jogAxis < 0)
-                    RecordJog(string.Format(CultureInfo.InvariantCulture, "JogOnSpeed(axis {0}, {1}, {2}%) = {3} (smooth start)", axisIndex, dir ? "+" : "-", pct, rc));
+
+                if (kind == JogKindButtons)
+                {
+                    if (_jogAxis < 0 || Math.Abs(pct - _appliedFeedPct) > 0.01)
+                        ApplyJogFeed(pct);
+                    if (_jogAxis < 0)
+                    {
+                        // UCCNC's own jog, exactly like holding a jog arrow: Continous jog mode, then "jog on".
+                        int contBtn = _catalog != null && _catalog.JogContinuous >= 0 ? _catalog.JogContinuous : 161;
+                        _uc.Callbutton(contBtn);
+                        int onBtn = 147 + axisIndex * 2 + (dir ? 0 : 1);
+                        _uc.Callbutton(onBtn);
+                        RecordJog(string.Format(CultureInfo.InvariantCulture, "UCCNC jog button {0} (axis {1}, {2}) at jog feed {3}%", onBtn, axisIndex, dir ? "+" : "-", pct));
+                    }
+                }
+                else
+                {
+                    int rc = _uc.JogOnSpeed(axisIndex, dir, pct);
+                    if (_jogAxis < 0)
+                        RecordJog(string.Format(CultureInfo.InvariantCulture, "JogOnSpeed(axis {0}, {1}, {2}%) = {3} (MPG jog start)", axisIndex, dir ? "+" : "-", pct, rc));
+                }
                 _jogAxis = axisIndex;
                 _jogDir = dir;
                 _jogPct = pct;
+                _jogKind = kind;
                 _lastClickUtc = now;
             }
             else if (_jogAxis >= 0 && (now - _lastClickUtc).TotalMilliseconds > _settings.ContinuousStopMs)
@@ -700,7 +735,18 @@ namespace Plugins
             _stopLastMoveUtc = _stopUtc;
             _stopLastPos = MachinePos(axis);
             _stopStage = 1;
-            SendSmoothStop(axis, _stopDir);
+            if (_jogKind == JogKindButtons)
+            {
+                // Same as releasing the jog arrow: "Switches the X axis positive direction jogging off" etc.
+                int offBtn = 229 + axis * 2 + (_stopDir ? 0 : 1);
+                _uc.Callbutton(offBtn);
+                _syncedMode = -1;
+            }
+            else
+            {
+                // Testing showed only Step + MPG multi stops an MPG jog (JogOnSpeed).
+                SendSmoothStop(axis, _stopDir, true);
+            }
             _log.Debug("Smooth jog stop (" + reason + "), axis " + axis);
         }
 
@@ -769,6 +815,25 @@ namespace Plugins
             {
                 _stopStage = 0;
                 _syncedMode = -1;
+            }
+        }
+
+        /// <summary>Sets UCCNC's Jog feed % (the speed of its own jog) to the pendant knob %.</summary>
+        private void ApplyJogFeed(double pct)
+        {
+            _appliedFeedPct = pct;
+            var s = _settings;
+            if (s.JogFeedField <= 0) return; // not found yet: UCCNC's current jog feed is used
+            try
+            {
+                _uc.Setfield(s.JogFeedFieldAS3, pct, s.JogFeedField);
+                _uc.Validatefield(s.JogFeedFieldAS3, s.JogFeedField);
+                _log.Debug(string.Format(CultureInfo.InvariantCulture, "Jog feed field {0}/{1} set to {2}% (reads back '{3}')",
+                    s.JogFeedFieldAS3 ? "AS3" : "main", s.JogFeedField, pct, _uc.Getfield(s.JogFeedFieldAS3, s.JogFeedField)));
+            }
+            catch (Exception ex)
+            {
+                _log.Write("Setting the jog feed failed: " + ex.Message);
             }
         }
 
