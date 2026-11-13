@@ -39,7 +39,18 @@ namespace Plugins
         private bool _stepMode;
         private bool _singleStep;               // step mode: one step per click, rate limited
         private DateTime _lastSingleStepUtc = DateTime.MinValue;
-        private double _contBudget;             // continuous mode: distance allowed right now (rate limit)
+        private double _contBudget;             // stepped continuous mode: distance allowed right now (rate limit)
+
+        // Smooth continuous jog (JogOnSpeed) and the stop safety net
+        private int _jogAxis = -1;
+        private bool _jogDir;
+        private DateTime _lastClickUtc;
+        private int _stopStage;                 // 0 = idle, 1 = stop sent, 2 = stop re-sent, 3 = Reset pressed
+        private int _stopAxis = -1;
+        private bool _stopDir;
+        private DateTime _stopUtc;
+        private double _stopLastPos;
+        private DateTime _stopLastMoveUtc;
         private DateTime _lastWheelLoopUtc = DateTime.MinValue;
         private bool _showMachineCoords;
         private DateTime _nextConnectAttempt = DateTime.MinValue;
@@ -169,6 +180,7 @@ namespace Plugins
                 _catalog = LoadCatalogSafe();
 
             ProcessKeys();
+            VerifyJogStopped();
             ProcessWheel();
             if (_settings.MirrorOnScreen)
                 MirrorOnUccncScreen();
@@ -393,9 +405,16 @@ namespace Plugins
             // Every mode only ever sends short, fixed-length moves (AddLinearMoveRel).
             // UCCNC's open-ended JogOnSpeed could not be stopped from a plugin, so it is not used.
             double step;
+            if (!_stepMode && s.SmoothContinuous)
+            {
+                ProcessSmoothContinuous(delta, axisIndex, KnobPercent(feed) * s.ContinuousScalePercent / 100.0, now);
+                return;
+            }
+            if (_jogAxis >= 0) StopSmoothJog("mode changed");
+
             if (!_stepMode)
             {
-                // Continuous: distance per click and a rate limit, both scaled by the knob %.
+                // Stepped continuous: distance per click and a rate limit, both scaled by the knob %.
                 double pct = KnobPercent(feed);
                 step = s.ContinuousMmPerClick * pct / 100.0;
                 double rate = s.ContinuousMaxRate * pct / 100.0;          // units per second
@@ -417,9 +436,11 @@ namespace Plugins
             {
                 if (delta == 0) return;
                 step = KnobStep(feed);
+                if (step <= 0 && (feed == Whb04bFeedKnob.Pct60 || feed == Whb04bFeedKnob.Pct100))
+                    step = 1.0; // 60 % and 100 % have no printed step size; step like the 1.0 position
                 if (step <= 0)
                 {
-                    Diag("Wheel " + delta + " ignored: STEP mode needs the speed knob on 0.001/0.01/0.1/1.0 (it is on " + feed + "). Press MPG for continuous mode.");
+                    Diag("Wheel " + delta + " ignored: STEP mode needs a speed knob position other than Lead (it is on " + feed + ").");
                     return;
                 }
 
@@ -528,14 +549,14 @@ namespace Plugins
                     _mirrorPrimed = true;
                     return;
                 }
-                if (mode != _syncedMode)
+                if (mode != _syncedMode && _stopStage == 0)
                 {
                     int code = _stepMode ? _catalog.JogStep : _catalog.JogContinuous;
                     if (code >= 0) PressScreenButton(code, "jog mode " + (_stepMode ? "step" : "continuous"));
 
                     // Also light "MPG cont." / "MPG multi" / "MPG single" (pressing a selector is harmless if already on).
                     int mpg = mode == 0 ? _catalog.MpgContinuous : (mode == 1 ? _catalog.MpgMulti : _catalog.MpgSingle);
-                    if (mpg >= 0)
+                    if (mpg >= 0 && _settings.MirrorMpgButtons)
                         PressScreenButton(mpg, mode == 0 ? "MPG cont." : (mode == 1 ? "MPG multi" : "MPG single"));
 
                     _syncedMode = mode;
@@ -608,9 +629,135 @@ namespace Plugins
             }
         }
 
+        /// <summary>
+        /// Smooth continuous jog: UCCNC's JogOnSpeed at the knob % while the wheel turns.
+        /// A plugin cannot stop JogOnSpeed with speed 0; testing showed that pressing UCCNC's
+        /// "jog mode stepping" (162) and "MPG multi" (228) buttons does stop it. Every stop is then
+        /// checked against the machine position, and escalated up to Reset (see VerifyJogStopped).
+        /// </summary>
+        private void ProcessSmoothContinuous(int delta, int axisIndex, double pct, DateTime now)
+        {
+            if (delta != 0 && pct > 0)
+            {
+                bool dir = delta > 0;
+                if (_stopStage > 0) return;                       // still confirming the last stop
+                if (_jogAxis >= 0 && (_jogAxis != axisIndex || _jogDir != dir))
+                {
+                    StopSmoothJog("direction or axis changed");   // the next clicks start the new direction
+                    return;
+                }
+                int rc = _uc.JogOnSpeed(axisIndex, dir, pct);
+                if (_jogAxis < 0)
+                    RecordJog(string.Format(CultureInfo.InvariantCulture, "JogOnSpeed(axis {0}, {1}, {2}%) = {3} (smooth start)", axisIndex, dir ? "+" : "-", pct, rc));
+                _jogAxis = axisIndex;
+                _jogDir = dir;
+                _lastClickUtc = now;
+            }
+            else if (_jogAxis >= 0 && (now - _lastClickUtc).TotalMilliseconds > _settings.ContinuousStopMs)
+            {
+                StopSmoothJog("wheel stopped");
+            }
+        }
+
+        private void StopSmoothJog(string reason)
+        {
+            int axis = _jogAxis;
+            if (axis < 0) return;
+            _jogAxis = -1;
+            _stopAxis = axis;
+            _stopDir = _jogDir;
+            _stopUtc = DateTime.UtcNow;
+            _stopLastMoveUtc = _stopUtc;
+            _stopLastPos = MachinePos(axis);
+            _stopStage = 1;
+            SendSmoothStop(axis, _stopDir);
+            _log.Debug("Smooth jog stop (" + reason + "), axis " + axis);
+        }
+
+        private void SendSmoothStop(int axis, bool dir)
+        {
+            try
+            {
+                _uc.JogOnSpeed(axis, false, 0.0);
+                _uc.JogOnSpeed(axis, true, 0.0);
+                _uc.MPGJogOff(axis);
+                int stepBtn = _catalog != null && _catalog.JogStep >= 0 ? _catalog.JogStep : 162;
+                int multiBtn = _catalog != null && _catalog.MpgMulti >= 0 ? _catalog.MpgMulti : 228;
+                _uc.Callbutton(stepBtn);
+                _uc.Callbutton(multiBtn);
+                _syncedMode = -1; // the jog-mode buttons are restored once the stop is confirmed
+            }
+            catch (Exception ex)
+            {
+                _log.Write("Jog stop failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Safety net after every smooth-jog stop: watch the machine position. Still moving after
+        /// 0.3 s: send the stop again. Still moving after 0.8 s: press UCCNC Reset (512).
+        /// </summary>
+        private void VerifyJogStopped()
+        {
+            if (_stopStage == 0) return;
+            var now = DateTime.UtcNow;
+            double pos = MachinePos(_stopAxis);
+            if (Math.Abs(pos - _stopLastPos) > 1e-6) _stopLastMoveUtc = now;
+            _stopLastPos = pos;
+
+            double sinceStop = (now - _stopUtc).TotalMilliseconds;
+            double still = (now - _stopLastMoveUtc).TotalMilliseconds;
+
+            if (still >= 120)
+            {
+                _log.Debug("Smooth jog stopped after " + (int)sinceStop + " ms");
+                _stopStage = 0;
+                _syncedMode = -1; // restore the jog-mode buttons on the UCCNC screen
+                return;
+            }
+            if (_stopStage == 1 && sinceStop > 300)
+            {
+                _log.Write("WARNING: axis " + _stopAxis + " still moving 0.3 s after the jog stop, sending the stop again");
+                SendSmoothStop(_stopAxis, _stopDir);
+                _stopStage = 2;
+            }
+            else if (_stopStage == 2 && sinceStop > 800)
+            {
+                _log.Write("ERROR: axis " + _stopAxis + " still moving 0.8 s after the jog stop, pressing UCCNC Reset");
+                _uc.Callbutton(512); // "Switches the Reset button on"
+                _stopStage = 3;
+            }
+            else if (_stopStage == 3 && sinceStop > 3000)
+            {
+                _stopStage = 0;
+                _syncedMode = -1;
+            }
+        }
+
+        private double MachinePos(int axis)
+        {
+            try
+            {
+                switch (axis)
+                {
+                    case 0: return _uc.GetXmachpos();
+                    case 1: return _uc.GetYmachpos();
+                    case 2: return _uc.GetZmachpos();
+                    case 3: return _uc.GetAmachpos();
+                    case 4: return _uc.GetBmachpos();
+                    case 5: return _uc.GetCmachpos();
+                }
+            }
+            catch
+            {
+            }
+            return 0;
+        }
+
         /// <summary>Forgets every wheel click that has not been turned into a move yet.</summary>
         public void StopAllJog()
         {
+            if (_jogAxis >= 0) StopSmoothJog("stop");
             _stepRemainder = 0;
             _contBudget = 0;
             lock (_sync) _pendingWheel = 0;

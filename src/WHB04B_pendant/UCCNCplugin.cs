@@ -11,7 +11,7 @@ namespace Plugins
     /// </summary>
     public class UCCNCplugin
     {
-        public const string Version = "0.4.5";
+        public const string Version = "0.4.6";
 
         private Plugininterface.Entry UC;
         private Logger _log;
@@ -68,7 +68,7 @@ namespace Plugins
         public void Startup_event()
         {
             EnsureController();
-            ShowConfig();
+            ShowConfig(false); // open without taking the keyboard focus from UCCNC (arrow-key jogging)
         }
 
         private bool EnsureController()
@@ -181,6 +181,11 @@ namespace Plugins
 
         private void ShowConfig()
         {
+            ShowConfig(true);
+        }
+
+        private void ShowConfig(bool activate)
+        {
             if (!EnsureController())
             {
                 MessageBox.Show("The WHB04B plugin could not start. See XHC-WHB04B-4_pendant.log in the Plugins folder.", "XHC WHB04B-4");
@@ -196,15 +201,18 @@ namespace Plugins
                     var f = _configForm;
                     if (f == null || f.IsDisposed)
                     {
-                        f = new ConfigForm(UC, _controller, _log);
+                        f = new ConfigForm(UC, _controller, _log) { NoActivate = !activate };
                         f.FormClosed += (s, e) => _configForm = null;
                         _configForm = f;
                     }
                     if (f.WindowState == FormWindowState.Minimized)
                         f.WindowState = FormWindowState.Normal;
                     f.Show();
-                    f.BringToFront();
-                    f.Activate();
+                    if (activate)
+                    {
+                        f.BringToFront();
+                        f.Activate();
+                    }
                 }
                 catch (Exception ex)
                 {

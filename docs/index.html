@@ -130,7 +130,7 @@
       <div class="text">
         <ul class="features">
           <li><strong>Jogging</strong> on X, Y, Z and A with the wheel: multi step, single step
-            (0.001 – 1.0 per click) and a rate-limited continuous mode.</li>
+            (0.001 – 1.0 per click) and a smooth continuous mode with a verified stop.</li>
           <li><strong>Keys</strong>: Reset, Stop, Start/Pause, the Fn functions (feed and spindle
             override, home, safe Z, go to zero, spindle, probe Z) and 10 free macro keys.</li>
           <li><strong>Pendant LCD</strong>: work or machine coordinates, step/continuous mode, feed
@@ -196,9 +196,9 @@
   <section>
     <div class="note">
       <strong>Safety.</strong> Keep the E-stop within reach when you first try the plugin. Continuous
-      mode never uses UCCNC's open-ended jog. Testing showed a plugin cannot reliably stop that jog.
-      Every wheel click is a short, fixed-length move with a rate limit, so the machine stops shortly
-      after the wheel does. The Stop key also stops pendant jogging.
+      mode stops the jog shortly after the wheel stops, or at once on the Stop key. Every stop is
+      checked against the machine position. If the axis is still moving, the stop is repeated and
+      then UCCNC Reset is pressed.
     </div>
   </section>
 

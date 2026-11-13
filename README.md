@@ -13,7 +13,7 @@ UCCNC's own "XHC-HB04" plugin is for the older **wired** HB04 (PID `EB70`),
 which uses a different USB protocol. That plugin can't read the wireless pendant.
 
 > **Status:** tested on a StepCraft M700 with UCCNC. Keys, step jogging, the LCD and
-> the UCCNC screen sync work. The rate-limited continuous mode (v0.4.0) is new and
+> the UCCNC screen sync work. The smooth continuous mode with verified stop (v0.4.6) is new and
 > still being tested. Keep the E-stop within reach.
 
 ![Settings window](docs/img/screenshot-settings.png)
@@ -37,7 +37,7 @@ which uses a different USB protocol. That plugin can't read the wireless pendant
 | MPG | Cycles continuous → multi step → single step (like the UCR201 pendant) |
 | Step/Continuous | Toggles step ↔ continuous |
 | Axis knob OFF/X/Y/Z/A | Selects the jog axis (OFF = wheel does nothing) |
-| Speed knob | Step modes: 0.001 / 0.01 / 0.1 / 1.0 per click (single step: max one step per 0.2 s). Continuous: 2 / 5 / 10 / 30 / 60 / 100 % of 1 mm per click, rate-limited to the same % of 25 mm/s |
+| Speed knob | Step modes: 0.001 / 0.01 / 0.1 / 1.0 per click; 60 % and 100 % also step 1.0 (single step: max one step per 0.2 s). Continuous: smooth jog at 2 / 5 / 10 / 30 / 60 / 100 % speed while the wheel turns |
 | Wheel | Jogs the selected axis |
 | LCD | X/Y/Z (or A/B/C) position, CONT/STEP mode, feed and spindle values |
 
@@ -57,12 +57,17 @@ by name in UCCNC's button list, which is saved to
 
 Settings are saved in the UCCNC profile under section `[WHB04B]`.
 
-### Safety: how continuous mode moves
+### Safety: how continuous mode stops
 
-Continuous mode never uses UCCNC's open-ended jog (`JogOnSpeed`). Testing showed a
-plugin cannot reliably stop that jog. Every wheel click becomes a short, fixed-length
-move. Clicks above the rate limit are dropped, so when the wheel stops, the machine
-stops after the last short move.
+Continuous mode jogs smoothly with UCCNC's `JogOnSpeed` while the wheel turns. A plugin
+cannot stop that jog with speed 0. Testing showed that pressing UCCNC's *jog mode stepping*
+and *MPG multi* buttons does stop it, so the plugin stops the jog that way 0.25 s after the
+last wheel click, or at once when you press Stop. **Every stop is checked against the
+machine position.** If the axis is still moving after 0.3 s the stop is sent again, and after
+0.8 s the plugin presses UCCNC **Reset**.
+
+If you untick *Smooth continuous jog*, continuous mode instead sends short fixed-length,
+rate-limited moves. These always stop, but the motion is not smooth.
 
 ## Install
 

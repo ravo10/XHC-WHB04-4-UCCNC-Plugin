@@ -52,7 +52,14 @@ namespace Plugins
         public int MaxDetentsPerLoop = 10;
 
         /// <summary>Continuous jog stops this many ms after the last wheel movement.</summary>
-        public int ContinuousStopMs = 150;               // no longer used (JogOnSpeed removed)
+        /// <summary>Smooth continuous jog: the jog stops this many ms after the last wheel click.</summary>
+        public int ContinuousStopMs = 250;
+
+        /// <summary>Continuous mode uses UCCNC's smooth jog (with the stop safety net) instead of short separate moves.</summary>
+        public bool SmoothContinuous = true;
+
+        /// <summary>Also light UCCNC's MPG cont./single/multi buttons when the pendant mode changes.</summary>
+        public bool MirrorMpgButtons = true;
 
         /// <summary>Continuous mode: distance per wheel click at 100 % (scaled by the knob %).</summary>
         public double ContinuousMmPerClick = 1.0;
@@ -130,6 +137,8 @@ namespace Plugins
                     s.ReverseAxis[i] = ReadBool(uc, "Reverse" + AxisNames[i], s.ReverseAxis[i]);
                 s.RunOnMainThread = ReadBool(uc, "RunOnMainThread", s.RunOnMainThread);
                 s.WindowOnTop = ReadBool(uc, "WindowOnTop", s.WindowOnTop);
+                s.SmoothContinuous = ReadBool(uc, "SmoothContinuous", s.SmoothContinuous);
+                s.MirrorMpgButtons = ReadBool(uc, "MirrorMpgButtons", s.MirrorMpgButtons);
                 s.MirrorOnScreen = ReadBool(uc, "MirrorOnScreen", s.MirrorOnScreen);
                 s.Checksum = (ChecksumMode)ReadInt(uc, "ChecksumMode", (int)s.Checksum);
                 s.StepSpeedPercent = ReadDouble(uc, "StepSpeedPercent", s.StepSpeedPercent);
@@ -216,7 +225,17 @@ namespace Plugins
                             Write(uc, "Reverse" + AxisNames[i], s.ReverseAxis[i] ? "1" : "0");
                         }
                     }
-                    Write(uc, "SettingsVersion", "6");
+                }
+
+                // v0.4.6: smooth continuous jog is back; its stop delay default is 250 ms.
+                if (ReadInt(uc, "SettingsVersion", 1) < 7)
+                {
+                    if (s.ContinuousStopMs == 150)
+                    {
+                        s.ContinuousStopMs = 250;
+                        Write(uc, "ContinuousStopMs", "250");
+                    }
+                    Write(uc, "SettingsVersion", "7");
                 }
             }
             catch
@@ -236,6 +255,8 @@ namespace Plugins
                 Write(uc, "Reverse" + AxisNames[i], ReverseAxis[i] ? "1" : "0");
             Write(uc, "RunOnMainThread", RunOnMainThread ? "1" : "0");
             Write(uc, "WindowOnTop", WindowOnTop ? "1" : "0");
+            Write(uc, "SmoothContinuous", SmoothContinuous ? "1" : "0");
+            Write(uc, "MirrorMpgButtons", MirrorMpgButtons ? "1" : "0");
             Write(uc, "MirrorOnScreen", MirrorOnScreen ? "1" : "0");
             Write(uc, "ChecksumMode", ((int)Checksum).ToString(CultureInfo.InvariantCulture));
             Write(uc, "StepSpeedPercent", StepSpeedPercent.ToString(CultureInfo.InvariantCulture));
@@ -248,7 +269,7 @@ namespace Plugins
             Write(uc, "FeedField", FeedFieldNumber.ToString(CultureInfo.InvariantCulture));
             Write(uc, "SpindleField", SpindleFieldNumber.ToString(CultureInfo.InvariantCulture));
             Write(uc, "SafeZField", SafeZFieldNumber.ToString(CultureInfo.InvariantCulture));
-            Write(uc, "SettingsVersion", "6");
+            Write(uc, "SettingsVersion", "7");
             foreach (var k in Keys)
             {
                 Write(uc, "Key_" + k.Key, k.Action ?? "");

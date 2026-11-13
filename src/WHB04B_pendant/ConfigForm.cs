@@ -126,6 +126,9 @@ namespace Plugins
         private readonly CheckBox[] _reverse = new CheckBox[4];
         private readonly CheckBox _mainThread = new CheckBox();
         private readonly CheckBox _mirror = new CheckBox();
+        private readonly CheckBox _mirrorMpg = new CheckBox();
+        private readonly CheckBox _smooth = new CheckBox();
+        private readonly NumericUpDown _stopMs = new NumericUpDown();
         private readonly CheckBox _startStep = new CheckBox();
         private readonly CheckBox _onTop = new CheckBox();
         private readonly ComboBox _checksum = new ComboBox();
@@ -205,6 +208,17 @@ namespace Plugins
         private static readonly Color Bad = Color.FromArgb(197, 48, 48);
 
         private readonly Label _statusTitle = new Label();
+
+        /// <summary>
+        /// When true the window opens without taking the keyboard focus, so UCCNC keeps the
+        /// arrow keys for jogging (used when UCCNC starts the plugin).
+        /// </summary>
+        public bool NoActivate { get; set; }
+
+        protected override bool ShowWithoutActivation
+        {
+            get { return NoActivate; }
+        }
 
         /// <summary>The header picture (embedded icon.png). Icon.ToBitmap cannot decode PNG-compressed icon frames on .NET 4.</summary>
         private static Image LoadHeaderImage()
@@ -361,6 +375,8 @@ namespace Plugins
             _onTop.CheckedChanged += (s, e) => TopMost = _onTop.Checked;
             _mirror.Text = "Mirror pendant mode on UCCNC screen";
             _debug.Text = "Debug log";
+            _mirrorMpg.Text = "Also light the MPG cont./single/multi buttons";
+            _smooth.Text = "Smooth continuous jog (stop is verified)";
             var revPanel = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
             revPanel.Controls.Add(new Label { Text = "Reverse wheel:", AutoSize = true, Margin = new Padding(3, 6, 3, 3) });
             for (int i = 0; i < _reverse.Length; i++)
@@ -384,12 +400,16 @@ namespace Plugins
             int r = 0;
             AddFull(t, _onTop, ref r);
             AddFull(t, _mirror, ref r);
+            AddFull(t, _mirrorMpg, ref r);
+            AddFull(t, _smooth, ref r);
             AddFull(t, revPanel, ref r);
             AddFull(t, _startStep, ref r);
             AddFull(t, _debug, ref r);
             AddFull(t, _mainThread, ref r);
             AddRow(t, "Step move speed %", _stepSpeed, ref r);
             AddRow(t, "Max wheel clicks per loop", _maxDetents, ref r);
+            Num(_stopMs, 100, 1000);
+            AddRow(t, "Smooth jog: stop after ms", _stopMs, ref r);
             AddRow(t, "Continuous: mm per click at 100%", _contStop, ref r);
             AddRow(t, "Continuous: max mm/s at 100%", _contScale, ref r);
             AddRow(t, "LCD feed field #", _feedField, ref r);
@@ -476,6 +496,9 @@ namespace Plugins
                 _reverse[i].Checked = _edit.ReverseAxis[i];
             _startStep.Checked = _edit.StartInStepMode;
             _mainThread.Checked = _edit.RunOnMainThread;
+            _mirrorMpg.Checked = _edit.MirrorMpgButtons;
+            _smooth.Checked = _edit.SmoothContinuous;
+            _stopMs.Value = Clamp(_stopMs, _edit.ContinuousStopMs);
             _checksum.SelectedIndex = (int)_edit.Checksum;
             _stepSpeed.Value = Clamp(_stepSpeed, _edit.StepSpeedPercent);
             _maxDetents.Value = Clamp(_maxDetents, _edit.MaxDetentsPerLoop);
@@ -526,6 +549,9 @@ namespace Plugins
                 _edit.ReverseAxis[i] = _reverse[i].Checked;
             _edit.StartInStepMode = _startStep.Checked;
             _edit.RunOnMainThread = _mainThread.Checked;
+            _edit.MirrorMpgButtons = _mirrorMpg.Checked;
+            _edit.SmoothContinuous = _smooth.Checked;
+            _edit.ContinuousStopMs = (int)_stopMs.Value;
             _edit.WindowOnTop = _onTop.Checked;
             _edit.Checksum = (ChecksumMode)Math.Max(0, _checksum.SelectedIndex);
             _edit.StepSpeedPercent = (double)_stepSpeed.Value;
