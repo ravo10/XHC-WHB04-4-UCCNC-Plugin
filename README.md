@@ -12,9 +12,10 @@ UCCNC machine.
 UCCNC's own "XHC-HB04" plugin is for the older **wired** HB04 (PID `EB70`),
 which uses a different USB protocol. That plugin can't read the wireless pendant.
 
-> **Status:** tested on a StepCraft M700 with UCCNC. Keys, step jogging, the LCD and
-> the UCCNC screen sync work. The smooth continuous mode with verified stop (v0.4.6) is new and
-> still being tested. Keep the E-stop within reach.
+> **Status:** tested on a StepCraft M700 with UCCNC under Windows 11. Keys, step and
+> single-step jogging, smooth continuous jogging (every test stop confirmed, 0.12–0.41 s
+> including braking), the pendant LCD, the UCCNC screen sync and keyboard jogging alongside
+> the plugin all work. Keep the E-stop within reach.
 
 ![Settings window](docs/img/screenshot-settings.png)
 
@@ -63,8 +64,8 @@ Continuous mode jogs smoothly with UCCNC's `JogOnSpeed` while the wheel turns. A
 cannot stop that jog with speed 0. Testing showed that pressing UCCNC's *jog mode stepping*
 and *MPG multi* buttons does stop it, so the plugin stops the jog that way 0.25 s after the
 last wheel click, or at once when you press Stop. **Every stop is checked against the
-machine position.** If the axis is still moving after 0.3 s the stop is sent again, and after
-0.8 s the plugin presses UCCNC **Reset**.
+machine position.** If the axis is still moving after 0.3 s (0.5 s at 100 % speed) the stop is
+sent again, and after 0.8 s (1.0 s at 100 %) the plugin presses UCCNC **Reset**.
 
 If you untick *Smooth continuous jog*, continuous mode instead sends short fixed-length,
 rate-limited moves. These always stop, but the motion is not smooth.

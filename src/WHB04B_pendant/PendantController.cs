@@ -51,6 +51,8 @@ namespace Plugins
         private DateTime _stopUtc;
         private double _stopLastPos;
         private DateTime _stopLastMoveUtc;
+        private double _jogPct;                 // speed of the running smooth jog (for the stop check timing)
+        private double _stopPct;
         private DateTime _lastWheelLoopUtc = DateTime.MinValue;
         private bool _showMachineCoords;
         private DateTime _nextConnectAttempt = DateTime.MinValue;
@@ -651,6 +653,7 @@ namespace Plugins
                     RecordJog(string.Format(CultureInfo.InvariantCulture, "JogOnSpeed(axis {0}, {1}, {2}%) = {3} (smooth start)", axisIndex, dir ? "+" : "-", pct, rc));
                 _jogAxis = axisIndex;
                 _jogDir = dir;
+                _jogPct = pct;
                 _lastClickUtc = now;
             }
             else if (_jogAxis >= 0 && (now - _lastClickUtc).TotalMilliseconds > _settings.ContinuousStopMs)
@@ -666,6 +669,7 @@ namespace Plugins
             _jogAxis = -1;
             _stopAxis = axis;
             _stopDir = _jogDir;
+            _stopPct = _jogPct;
             _stopUtc = DateTime.UtcNow;
             _stopLastMoveUtc = _stopUtc;
             _stopLastPos = MachinePos(axis);
@@ -695,7 +699,9 @@ namespace Plugins
 
         /// <summary>
         /// Safety net after every smooth-jog stop: watch the machine position. Still moving after
-        /// 0.3 s: send the stop again. Still moving after 0.8 s: press UCCNC Reset (512).
+        /// 0.3 s (0.5 s at 100 %): send the stop again. Still moving after 0.8 s (1.0 s at 100 %):
+        /// press UCCNC Reset (512). The extra time at high speed is the machine's normal braking:
+        /// on a StepCraft M700 a stop from 100 % took up to 0.41 s.
         /// </summary>
         private void VerifyJogStopped()
         {
@@ -715,15 +721,16 @@ namespace Plugins
                 _syncedMode = -1; // restore the jog-mode buttons on the UCCNC screen
                 return;
             }
-            if (_stopStage == 1 && sinceStop > 300)
+            double brake = 2.0 * Math.Max(0, Math.Min(100, _stopPct)); // up to 200 ms extra at 100 %
+            if (_stopStage == 1 && sinceStop > 300 + brake)
             {
-                _log.Write("WARNING: axis " + _stopAxis + " still moving 0.3 s after the jog stop, sending the stop again");
+                _log.Write("WARNING: axis " + _stopAxis + " still moving " + (int)sinceStop + " ms after the jog stop, sending the stop again");
                 SendSmoothStop(_stopAxis, _stopDir);
                 _stopStage = 2;
             }
-            else if (_stopStage == 2 && sinceStop > 800)
+            else if (_stopStage == 2 && sinceStop > 800 + brake)
             {
-                _log.Write("ERROR: axis " + _stopAxis + " still moving 0.8 s after the jog stop, pressing UCCNC Reset");
+                _log.Write("ERROR: axis " + _stopAxis + " still moving " + (int)sinceStop + " ms after the jog stop, pressing UCCNC Reset");
                 _uc.Callbutton(512); // "Switches the Reset button on"
                 _stopStage = 3;
             }
