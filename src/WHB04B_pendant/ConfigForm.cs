@@ -151,7 +151,7 @@ namespace Plugins
             Height = 760;
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 9f);
-            TopMost = true;
+            TopMost = _edit.WindowOnTop;
             ShowInTaskbar = true;
 
             BuildLayout();
@@ -357,7 +357,7 @@ namespace Plugins
             t.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38));
 
             _onTop.Text = "Window always on top";
-            _onTop.Checked = true;
+            _onTop.Checked = _edit.WindowOnTop;
             _onTop.CheckedChanged += (s, e) => TopMost = _onTop.Checked;
             _mirror.Text = "Mirror pendant mode on UCCNC screen";
             _debug.Text = "Debug log";
@@ -526,6 +526,7 @@ namespace Plugins
                 _edit.ReverseAxis[i] = _reverse[i].Checked;
             _edit.StartInStepMode = _startStep.Checked;
             _edit.RunOnMainThread = _mainThread.Checked;
+            _edit.WindowOnTop = _onTop.Checked;
             _edit.Checksum = (ChecksumMode)Math.Max(0, _checksum.SelectedIndex);
             _edit.StepSpeedPercent = (double)_stepSpeed.Value;
             _edit.MaxDetentsPerLoop = (int)_maxDetents.Value;

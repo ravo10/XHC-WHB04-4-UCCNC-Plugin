@@ -85,6 +85,7 @@ namespace Plugins
         private int _syncedMode = -1;   // 0 = continuous, 1 = step
         private int _syncedAxis = -1;
         private int _syncedStep = -1;
+        private bool _mirrorPrimed;     // false until the pendant state is known; then only changes are mirrored
 
         public ButtonCatalog Catalog { get { return _catalog; } }
         private string _lastWheelInfo = "none yet";
@@ -210,6 +211,7 @@ namespace Plugins
                 _log.Write("Pendant connected");
                 lock (_sync) { _pendingWheel = 0; _keys.Clear(); }
                 _syncedMode = _syncedAxis = _syncedStep = -1;
+                _mirrorPrimed = false;
             }
             else
             {
@@ -510,6 +512,19 @@ namespace Plugins
                 lock (_sync) { axis = _axis; feed = _feed; }
 
                 int mode = !_stepMode ? 0 : (_singleStep ? 2 : 1);
+                int axIdx = axis >= Whb04bAxis.X && axis <= Whb04bAxis.A ? (int)axis - 1 : -1;
+
+                if (!_mirrorPrimed)
+                {
+                    // Do not touch UCCNC's jog panel when the plugin starts or reconnects:
+                    // remember the pendant's current state and only mirror what the user changes on it.
+                    if (feed == Whb04bFeedKnob.Unknown) return; // no report from the pendant yet
+                    _syncedMode = mode;
+                    _syncedAxis = axIdx;
+                    _syncedStep = StepIndex(feed);
+                    _mirrorPrimed = true;
+                    return;
+                }
                 if (mode != _syncedMode)
                 {
                     int code = _stepMode ? _catalog.JogStep : _catalog.JogContinuous;

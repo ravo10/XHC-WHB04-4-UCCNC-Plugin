@@ -7,9 +7,9 @@
     <AssemblyName>XHC-WHB04B-4_pendant</AssemblyName>
     <RootNamespace>Plugins</RootNamespace>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <Version>0.4.3</Version>
-    <AssemblyVersion>0.4.3.0</AssemblyVersion>
-    <FileVersion>0.4.3.0</FileVersion>
+    <Version>0.4.4</Version>
+    <AssemblyVersion>0.4.4.0</AssemblyVersion>
+    <FileVersion>0.4.4.0</FileVersion>
     <Product>XHC WHB04B-4 pendant plugin for UCCNC</Product>
   </PropertyGroup>
 

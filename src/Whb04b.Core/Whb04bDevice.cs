@@ -33,6 +33,9 @@ namespace Whb04b
         private DateTime _lastBlockSent = DateTime.MinValue;
         private DateTime _lastSeedSent = DateTime.MinValue;
         private volatile bool _forceDisplay;
+        private Thread _writerThread;
+        private readonly AutoResetEvent _writeSignal = new AutoResetEvent(false);
+        private byte[] _pendingBlock;           // newest display block waiting for the writer thread
 
         private ushort _lastKeyWord;
         private Whb04bKey _pressedKey = Whb04bKey.None;
@@ -185,6 +188,8 @@ namespace Whb04b
 
             _readerThread = new Thread(ReaderLoop) { IsBackground = true, Name = "WHB04B reader" };
             _readerThread.Start();
+            _writerThread = new Thread(WriterLoop) { IsBackground = true, Name = "WHB04B LCD writer" };
+            _writerThread.Start();
             return true;
         }
 
@@ -195,6 +200,13 @@ namespace Whb04b
             if (t != null && t != Thread.CurrentThread)
                 t.Join(1000);
             _readerThread = null;
+
+            _writeSignal.Set();
+            var w = _writerThread;
+            if (w != null && w != Thread.CurrentThread)
+                w.Join(1000);
+            _writerThread = null;
+            Interlocked.Exchange(ref _pendingBlock, null);
 
             if (_readHandle != null) { _readHandle.Dispose(); _readHandle = null; }
             lock (_writeLock)
@@ -228,25 +240,35 @@ namespace Whb04b
             if (!force && _lastBlock != null && SameBytes(block, _lastBlock) && now - _lastBlockSent < DisplayRefreshInterval)
                 return true;
 
-            // Hold the lock for the whole block so nothing can be sent between its 3 reports.
-            lock (_writeLock)
-            {
-                bool ok = true;
-                foreach (var report in Whb04bDisplayData.ToFeatureReports(block))
-                {
-                    if (!SendFeature(report)) { ok = false; break; }
-                }
+            // The USB writes happen on the writer thread, so the caller (UCCNC's plugin loop)
+            // never waits for the dongle. Only the newest block is kept.
+            _lastBlock = block;
+            _lastBlockSent = now;
+            Interlocked.Exchange(ref _pendingBlock, block);
+            _writeSignal.Set();
+            return IsOpen;
+        }
 
-                if (ok)
+        private void WriterLoop()
+        {
+            while (!_stopping)
+            {
+                _writeSignal.WaitOne(250, false);
+                var block = Interlocked.Exchange(ref _pendingBlock, null);
+                if (block == null || _stopping) continue;
+
+                // Hold the lock for the whole block so nothing can be sent between its 3 reports.
+                lock (_writeLock)
                 {
-                    _lastBlock = block;
-                    _lastBlockSent = now;
+                    foreach (var report in Whb04bDisplayData.ToFeatureReports(block))
+                    {
+                        if (!SendFeature(report))
+                        {
+                            _lastBlock = null; // resend next time
+                            break;
+                        }
+                    }
                 }
-                else
-                {
-                    _lastBlock = null;
-                }
-                return ok;
             }
         }
 

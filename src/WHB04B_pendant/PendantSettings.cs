@@ -34,6 +34,9 @@ namespace Plugins
         /// <summary>Run all UCCNC calls on UCCNC's main window thread (what the UCR201 plugin does).</summary>
         public bool RunOnMainThread;
 
+        /// <summary>Keep the settings window above UCCNC. Off by default so it never blocks the UCCNC screen.</summary>
+        public bool WindowOnTop;
+
         /// <summary>Press UCCNC's own Continuous/Step, step-size and axis buttons so its screen follows the pendant.</summary>
         public bool MirrorOnScreen = true;
         public ChecksumMode Checksum = ChecksumMode.Resync;
@@ -122,6 +125,7 @@ namespace Plugins
                 for (int i = 0; i < s.ReverseAxis.Length; i++)
                     s.ReverseAxis[i] = ReadBool(uc, "Reverse" + AxisNames[i], s.ReverseAxis[i]);
                 s.RunOnMainThread = ReadBool(uc, "RunOnMainThread", s.RunOnMainThread);
+                s.WindowOnTop = ReadBool(uc, "WindowOnTop", s.WindowOnTop);
                 s.MirrorOnScreen = ReadBool(uc, "MirrorOnScreen", s.MirrorOnScreen);
                 s.Checksum = (ChecksumMode)ReadInt(uc, "ChecksumMode", (int)s.Checksum);
                 s.StepSpeedPercent = ReadDouble(uc, "StepSpeedPercent", s.StepSpeedPercent);
@@ -212,6 +216,7 @@ namespace Plugins
             for (int i = 0; i < ReverseAxis.Length; i++)
                 Write(uc, "Reverse" + AxisNames[i], ReverseAxis[i] ? "1" : "0");
             Write(uc, "RunOnMainThread", RunOnMainThread ? "1" : "0");
+            Write(uc, "WindowOnTop", WindowOnTop ? "1" : "0");
             Write(uc, "MirrorOnScreen", MirrorOnScreen ? "1" : "0");
             Write(uc, "ChecksumMode", ((int)Checksum).ToString(CultureInfo.InvariantCulture));
             Write(uc, "StepSpeedPercent", StepSpeedPercent.ToString(CultureInfo.InvariantCulture));
