@@ -682,9 +682,10 @@ namespace Plugins
         {
             try
             {
-                _uc.JogOnSpeed(axis, false, 0.0);
-                _uc.JogOnSpeed(axis, true, 0.0);
-                _uc.MPGJogOff(axis);
+                // Not JogOnSpeed(axis, dir, 0) or MPGJogOff: they never stopped the jog in testing, and
+                // they are the likely reason UCCNC's keyboard jog stopped working after pendant use
+                // (they leave the axis jog at 0 % speed). The two buttons below do stop it, and
+                // VerifyJogStopped checks every stop against the machine position.
                 int stepBtn = _catalog != null && _catalog.JogStep >= 0 ? _catalog.JogStep : 162;
                 int multiBtn = _catalog != null && _catalog.MpgMulti >= 0 ? _catalog.MpgMulti : 228;
                 _uc.Callbutton(stepBtn);
