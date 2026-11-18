@@ -117,6 +117,15 @@ When the checksum fails, the Mach3 driver throws the report away and sends a
 **seed packet** (a single feature report, see below) to resynchronise the
 pendant [`0x10005f70`].
 
+### Pendant off / out of range
+
+When the pendant is switched off (and, presumably, when it sleeps or leaves radio range) the
+receiver sends one report with key1, key2, the feed knob and the axis knob all `0x00`, for example
+`04 66 00 00 00 00 00 0D`. Its checksum byte does not match. Real knob codes are never 0 (the axis
+knob's OFF position is `0x06`), so this report can be told apart from a normal one. The next normal
+report means the pendant is back. The pendant only sends when something changes, so after the
+receiver is opened its state is unknown until a key, knob or the wheel is used.
+
 ## LCD output (PC → dongle): feature reports
 
 Every write is `HidD_SetFeature(col02, buf, 8)` with `buf[0] = 0x06` (report

@@ -64,6 +64,8 @@ namespace Plugins
         private const int BtnToggleMachineCoords = 197;
         private DateTime _nextConnectAttempt = DateTime.MinValue;
         private bool _wasConnected;
+        private PendantLink _lastLink = PendantLink.Unknown;
+        private string _receiverStatus;          // status line part about the receiver (set on connect)
 
         // Jog state
         private int _stepAxis = -1;
@@ -188,6 +190,8 @@ namespace Plugins
             if (_catalog == null)
                 _catalog = LoadCatalogSafe();
 
+            UpdateLinkStatus();
+
             ProcessKeys();
             VerifyJogStopped();
             ProcessWheel();
@@ -202,6 +206,34 @@ namespace Plugins
                 : (_settings.ContinuousEngine == ContinuousEngines.MpgJog || _mpgUi ? "MPG jog" : "UCCNC jog buttons");
             LiveStatus = "Mode: " + ModeName + " (continuous: " + engine + ")   Axis knob: " + ax + "   Speed knob: " + fk +
                          "   Last wheel: " + _lastWheelInfo + "\nLast jog: " + _lastJogCall;
+        }
+
+        /// <summary>
+        /// Status line from the pendant's own state. The receiver alone being plugged in is not
+        /// "connected": the pendant must be on. It only sends when something changes, so right
+        /// after start the state is unknown until a key, knob or the wheel is used.
+        /// </summary>
+        private void UpdateLinkStatus()
+        {
+            var link = _device.Link;
+            if (link != _lastLink)
+            {
+                if (link == PendantLink.Off)
+                {
+                    StopAllJog();
+                    lock (_sync) { _pendingWheel = 0; _keys.Clear(); }
+                }
+                if ((int)_lastLink != -1 || link != PendantLink.Unknown)
+                    _log.Write(link == PendantLink.On ? "Pendant is on"
+                        : link == PendantLink.Off ? "Pendant is off, asleep or out of range" : "Pendant state unknown");
+                _lastLink = link;
+            }
+
+            string text = link == PendantLink.On ? "Connected: receiver and pendant"
+                : link == PendantLink.Off ? "Receiver connected, but the pendant is off or out of range"
+                : "Receiver connected, waiting for the pendant (switch it on, or press a key / turn a knob)";
+            if (_receiverStatus != null) text += ". " + _receiverStatus;
+            StatusText = text;
         }
 
         private void TryConnect()
@@ -228,10 +260,12 @@ namespace Plugins
             if (ok)
             {
                 _wasConnected = true;
-                StatusText = _device.SharedWithOtherProgram
-                    ? "Connected, but ANOTHER PROGRAM is also using the pendant (close Whb04bTest.exe / Mach3)"
-                    : "Connected";
-                _log.Write("Pendant connected");
+                _receiverStatus = _device.SharedWithOtherProgram
+                    ? "ANOTHER PROGRAM is also using the pendant (close Whb04bTest.exe / Mach3)"
+                    : null;
+                _lastLink = (PendantLink)(-1);
+                UpdateLinkStatus();
+                _log.Write("USB receiver connected");
                 lock (_sync) { _pendingWheel = 0; _keys.Clear(); }
                 _syncedMode = _syncedAxis = _syncedStep = -1;
                 _mirrorPrimed = false;

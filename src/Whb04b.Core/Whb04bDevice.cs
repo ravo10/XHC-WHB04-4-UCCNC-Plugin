@@ -16,6 +16,17 @@ namespace Whb04b
         Strict,
     }
 
+    /// <summary>Whether the wireless pendant itself (not the USB receiver) is talking to the receiver.</summary>
+    public enum PendantLink
+    {
+        /// <summary>Receiver open, nothing heard from the pendant yet (it only sends when something changes).</summary>
+        Unknown,
+        /// <summary>A normal report arrived: the pendant is on and in range.</summary>
+        On,
+        /// <summary>The receiver sent its "pendant gone" report (all keys and knobs 0): switched off, asleep or out of range.</summary>
+        Off,
+    }
+
     /// <summary>
     /// Talks to the WHB04B USB dongle. Events are raised on a background reader
     /// thread, so handlers must be thread-safe.
@@ -86,6 +97,13 @@ namespace Whb04b
 
         /// <summary>The dongle was unplugged or a read failed.</summary>
         public event Action Disconnected;
+
+        /// <summary>The pendant's own state, see <see cref="PendantLink"/>.</summary>
+        public PendantLink Link { get { return _link; } }
+        private volatile PendantLink _link = PendantLink.Unknown;
+
+        /// <summary>Raised on the reader thread when <see cref="Link"/> changes.</summary>
+        public event Action<PendantLink> LinkChanged;
 
         /// <summary>Lists the HID interface paths that belong to the dongle.</summary>
         public static List<string> FindDevicePaths(ushort productId = Whb04bConstants.ProductIdWireless)
@@ -183,6 +201,7 @@ namespace Whb04b
             _pressedKey = Whb04bKey.None;
             _lastAxis = (Whb04bAxis)(-1);
             _lastFeed = (Whb04bFeedKnob)(-1);
+            _link = PendantLink.Unknown;
 
             SendSeed();
 
@@ -383,6 +402,26 @@ namespace Whb04b
             if (LogRawReports)
                 WriteLog(r.ToString());
 
+            // When the pendant is switched off (or goes to sleep / out of range) the receiver sends
+            // one report with all keys and both knobs 0. Real knob codes are never 0 (the axis
+            // knob's OFF position is 0x06). Any other report means the pendant is on.
+            if (r.Key1 == 0 && r.Key2 == 0 && r.FeedKnobRaw == 0 && r.AxisKnobRaw == 0)
+            {
+                if (_pressedKey != Whb04bKey.None)
+                {
+                    var released = _pressedKey;
+                    _pressedKey = Whb04bKey.None;
+                    var up = KeyUp;
+                    if (up != null) up(released);
+                }
+                _lastKeyWord = 0;
+                _lastAxis = (Whb04bAxis)(-1);
+                _lastFeed = (Whb04bFeedKnob)(-1);
+                SetLink(PendantLink.Off);
+                return;
+            }
+            SetLink(PendantLink.On);
+
             if (ChecksumMode != ChecksumMode.Ignore && !r.IsChecksumValid(Seed))
             {
                 ChecksumErrors++;
@@ -440,6 +479,15 @@ namespace Whb04b
                 var down = KeyDown;
                 if (down != null) down(r.Key, r.FnHeld);
             }
+        }
+
+        private void SetLink(PendantLink link)
+        {
+            if (_link == link) return;
+            _link = link;
+            WriteLog("Pendant " + (link == PendantLink.On ? "is on" : "is off, asleep or out of range"));
+            var h = LinkChanged;
+            if (h != null) h(link);
         }
 
         private void Raise(Action<Whb04bInputReport> h, Whb04bInputReport r)

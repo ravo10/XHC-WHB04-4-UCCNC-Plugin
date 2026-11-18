@@ -72,7 +72,7 @@ namespace Whb04bScreenshots
             var controller = new PendantController(uc, log);
             controller.LoadCatalogSafe();
 
-            Set(controller, "StatusText", "Connected");
+            Set(controller, "StatusText", "Connected: receiver and pendant");
             Set(controller, "LiveStatus",
                 "Mode: MULTI STEP   Axis knob: X   Speed knob: Step01Pct10   Last wheel: +3 at 14:32:10\n" +
                 "Last jog: AddLinearMoveRel(axis 0, 0.003125 x 96 motor steps, 100%, +) = 0 at 14:32:10");
@@ -95,7 +95,7 @@ namespace Whb04bScreenshots
                 try
                 {
                     // ConfigForm refreshes its status from the controller; keep the demo text.
-                    Set(controller, "StatusText", "Connected");
+                    Set(controller, "StatusText", "Connected: receiver and pendant");
                     form.Refresh();
                     Save(form, Path.Combine(args[1], "screenshot-settings.png"));
                     result = 0;

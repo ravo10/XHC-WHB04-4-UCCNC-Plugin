@@ -47,6 +47,7 @@ namespace Whb04bTest
                 dev.LogRawReports = raw;
                 dev.ChecksumMode = ChecksumMode.Resync;
 
+                dev.LinkChanged += l => Console.WriteLine("Pendant    -> " + l);
                 dev.AxisChanged += a => { lock (Sync) _axis = a; Console.WriteLine("Axis knob  -> " + a); };
                 dev.FeedKnobChanged += f => { lock (Sync) _feed = f; Console.WriteLine("Feed knob  -> " + f); };
                 dev.KeyDown += (k, fn) =>

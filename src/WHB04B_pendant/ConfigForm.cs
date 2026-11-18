@@ -587,8 +587,12 @@ namespace Plugins
             var dev = _controller.Device;
             bool shared = dev.IsOpen && dev.SharedWithOtherProgram;
             _statusTitle.Text = "\u25CF  " + (_controller.StatusText ?? "Waiting for UCCNC loop…");
-            bool connected = (_controller.StatusText ?? "").StartsWith("Connected", StringComparison.Ordinal);
-            _statusTitle.ForeColor = !connected ? Bad : (shared ? Accent : Ok);
+            // Green: pendant on. Orange: receiver only, pendant state not known yet, or shared.
+            // Red: no receiver, or the pendant is off / out of range.
+            var link = dev.IsOpen ? dev.Link
+                : ((_controller.StatusText ?? "").StartsWith("Connected", StringComparison.Ordinal) ? PendantLink.On : PendantLink.Off);
+            _statusTitle.ForeColor = link == PendantLink.Off ? Bad
+                : (link == PendantLink.Unknown || shared ? Accent : Ok);
             string s = _controller.LiveStatus ?? "";
             if (dev.IsOpen && dev.ChecksumErrors > 0)
                 s += "    Checksum errors: " + dev.ChecksumErrors;
