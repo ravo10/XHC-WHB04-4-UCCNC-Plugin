@@ -202,8 +202,8 @@ namespace Plugins
             Whb04bAxis ax;
             Whb04bFeedKnob fk;
             lock (_sync) { ax = _axis; fk = _feed; }
-            string engine = _settings.ContinuousEngine == ContinuousEngines.ShortMoves ? "short moves"
-                : (_settings.ContinuousEngine == ContinuousEngines.MpgJog || _mpgUi ? "MPG jog" : "UCCNC jog buttons");
+            string engine = _settings.ContinuousEngine == ContinuousEngines.MpgJog ? "MPG jog"
+                : (_settings.ContinuousEngine == ContinuousEngines.ShortMoves || _mpgUi ? "short moves" : "UCCNC jog buttons");
             LiveStatus = "Mode: " + ModeName + " (continuous: " + engine + ")   Axis knob: " + ax + "   Speed knob: " + fk +
                          "   Last wheel: " + _lastWheelInfo + "\nLast jog: " + _lastJogCall;
         }
@@ -351,7 +351,14 @@ namespace Plugins
                     return;
 
                 case "MODE_TOGGLE":
-                    SetUiFamily(false);
+                    if (_mpgUi)
+                    {
+                        // Coming back from the MPG family: keep continuous as continuous and step as
+                        // step (MPG continuous -> Continous, MPG multi/single -> Step), don't toggle.
+                        SetUiFamily(false);
+                        SetMode(_stepMode, false);
+                        return;
+                    }
                     SetMode(!_stepMode, false);
                     return;
 
@@ -427,6 +434,7 @@ namespace Plugins
         private void SetUiFamily(bool mpg)
         {
             if (_mpgUi == mpg) return;
+            StopAllJog();       // a running jog belongs to the old family's jog method
             _mpgUi = mpg;
             _syncedMode = -1; // re-press the matching UCCNC button
             _log.Debug("Pendant mode family -> " + (mpg ? "MPG" : "Step/Continuous"));
@@ -474,10 +482,14 @@ namespace Plugins
             // Every mode only ever sends short, fixed-length moves (AddLinearMoveRel).
             // UCCNC's open-ended JogOnSpeed could not be stopped from a plugin, so it is not used.
             double step;
-            if (!_stepMode && s.ContinuousEngine != ContinuousEngines.ShortMoves)
+            // UCCNC's MPG jog (JogOnSpeed) is only used when chosen in the settings. With "UCCNC jog",
+            // the MPG family (where UCCNC's own jog buttons do nothing) uses short moves instead:
+            // after a JogOnSpeed jog, UCCNC's own continuous jog no longer worked the same way.
+            bool smooth = !_stepMode && (s.ContinuousEngine == ContinuousEngines.MpgJog ||
+                                         (s.ContinuousEngine == ContinuousEngines.JogButtons && !_mpgUi));
+            if (smooth)
             {
-                // In the MPG family UCCNC's own jog buttons are inactive, so MPG jog is used there.
-                int kind = (s.ContinuousEngine == ContinuousEngines.JogButtons && !_mpgUi) ? JogKindButtons : JogKindMpg;
+                int kind = s.ContinuousEngine == ContinuousEngines.JogButtons ? JogKindButtons : JogKindMpg;
                 ProcessSmoothContinuous(delta, axisIndex, KnobPercent(feed) * s.ContinuousScalePercent / 100.0, now, kind);
                 return;
             }
