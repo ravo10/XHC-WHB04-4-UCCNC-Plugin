@@ -101,6 +101,8 @@ namespace Whb04b
         /// <summary>The pendant's own state, see <see cref="PendantLink"/>.</summary>
         public PendantLink Link { get { return _link; } }
         private volatile PendantLink _link = PendantLink.Unknown;
+        private DateTime _offReportUtc = DateTime.MinValue;   // when the "pendant gone" report arrived
+        private bool _expectOffFollowUp;                      // the receiver sends one more report after it
 
         /// <summary>Raised on the reader thread when <see cref="Link"/> changes.</summary>
         public event Action<PendantLink> LinkChanged;
@@ -202,6 +204,7 @@ namespace Whb04b
             _lastAxis = (Whb04bAxis)(-1);
             _lastFeed = (Whb04bFeedKnob)(-1);
             _link = PendantLink.Unknown;
+            _expectOffFollowUp = false;
 
             SendSeed();
 
@@ -417,8 +420,25 @@ namespace Whb04b
                 _lastKeyWord = 0;
                 _lastAxis = (Whb04bAxis)(-1);
                 _lastFeed = (Whb04bFeedKnob)(-1);
+                _offReportUtc = DateTime.UtcNow;
+                _expectOffFollowUp = true;
                 SetLink(PendantLink.Off);
                 return;
+            }
+
+            // Right after the "pendant gone" report (0.1 - 1.5 s in the logs) the receiver sends one
+            // more report repeating the last knob positions, with no key and no wheel movement. It
+            // does not mean the pendant is back, so it is ignored (LinuxCNC's WHB04B driver does the same).
+            if (_expectOffFollowUp)
+            {
+                _expectOffFollowUp = false;
+                if (r.Key1 == 0 && r.Key2 == 0 && r.WheelDelta == 0 &&
+                    (DateTime.UtcNow - _offReportUtc).TotalSeconds < 3)
+                {
+                    if (LogRawReports)
+                        WriteLog("Ignored the receiver's follow-up report after 'pendant off'");
+                    return;
+                }
             }
             SetLink(PendantLink.On);
 

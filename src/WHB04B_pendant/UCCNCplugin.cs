@@ -11,7 +11,7 @@ namespace Plugins
     /// </summary>
     public class UCCNCplugin
     {
-        public const string Version = "0.5.2";
+        public const string Version = "0.5.3";
 
         private Plugininterface.Entry UC;
         private Logger _log;

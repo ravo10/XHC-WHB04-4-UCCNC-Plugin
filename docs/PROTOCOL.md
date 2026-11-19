@@ -122,8 +122,9 @@ pendant [`0x10005f70`].
 When the pendant is switched off (and, presumably, when it sleeps or leaves radio range) the
 receiver sends one report with key1, key2, the feed knob and the axis knob all `0x00`, for example
 `04 66 00 00 00 00 00 0D`. Its checksum byte does not match. Real knob codes are never 0 (the axis
-knob's OFF position is `0x06`), so this report can be told apart from a normal one. The next normal
-report means the pendant is back. The pendant only sends when something changes, so after the
+knob's OFF position is `0x06`), so this report can be told apart from a normal one. 0.1 – 1.5 s later the
+receiver sends one more report that repeats the last knob positions (no key, no wheel). That one
+must be ignored: it does not mean the pendant is back. Any later report does. The pendant only sends when something changes, so after the
 receiver is opened its state is unknown until a key, knob or the wheel is used.
 
 ## LCD output (PC → dongle): feature reports
