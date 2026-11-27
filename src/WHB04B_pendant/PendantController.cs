@@ -466,10 +466,16 @@ namespace Plugins
             int axisIndex = (int)axis - 1; // X=0 .. C=5
             // The pendant counts clockwise as negative relative to UCCNC's axes (the stock HB04 plugin
             // flips it too), so the wheel is flipped by default; "Reverse" flips it back per axis.
-            delta = -delta;
-            if (axisIndex >= 0 && axisIndex < s.ReverseAxis.Length && s.ReverseAxis[axisIndex]) delta = -delta;
+            int rawDelta = delta;
+            bool reversed = axisIndex >= 0 && axisIndex < s.ReverseAxis.Length && s.ReverseAxis[axisIndex];
+            delta = reversed ? delta : -delta;
             if (delta != 0)
-                _lastWheelInfo = (delta > 0 ? "+" : "") + delta + " at " + DateTime.Now.ToString("HH:mm:ss");
+            {
+                _lastWheelInfo = (delta > 0 ? "+" : "") + delta + (reversed ? " (reversed)" : "") + " at " + DateTime.Now.ToString("HH:mm:ss");
+                // One line per loop with wheel movement, so a wrong direction can be traced to its mode.
+                _log.Debug(string.Format(CultureInfo.InvariantCulture, "Wheel: pendant {0:+0;-0} on {1}, reverse {2} -> {3:+0;-0} ({4})",
+                    rawDelta, axis, reversed ? "ON" : "off", delta, ModeName));
+            }
 
             if (axis == Whb04bAxis.Off || feed == Whb04bFeedKnob.Lead || feed == Whb04bFeedKnob.Unknown)
             {

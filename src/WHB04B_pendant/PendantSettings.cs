@@ -300,6 +300,12 @@ namespace Plugins
             }
         }
 
+        /// <summary>Saves one axis' "Reverse wheel" tick at once (the checkboxes apply without Save).</summary>
+        public void SaveReverse(Plugininterface.Entry uc, int axis)
+        {
+            Write(uc, "Reverse" + AxisNames[axis], ReverseAxis[axis] ? "1" : "0");
+        }
+
         public void SaveJogFeedField(Plugininterface.Entry uc)
         {
             Write(uc, "JogFeedField", JogFeedField.ToString(CultureInfo.InvariantCulture));

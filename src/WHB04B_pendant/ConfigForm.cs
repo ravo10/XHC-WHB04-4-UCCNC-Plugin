@@ -384,6 +384,9 @@ namespace Plugins
             for (int i = 0; i < _reverse.Length; i++)
             {
                 _reverse[i] = new CheckBox { Text = PendantSettings.AxisNames[i], AutoSize = true };
+                int axis = i;
+                // Applies and saves at once, in every jog mode, without pressing Save.
+                _reverse[i].CheckedChanged += (s, e) => ApplyReverse(axis);
                 revPanel.Controls.Add(_reverse[i]);
             }
             _startStep.Text = "Start in step mode";
@@ -495,8 +498,10 @@ namespace Plugins
         {
             _mirror.Checked = _edit.MirrorOnScreen;
             _debug.Checked = _edit.DebugLog;
+            _loadingValues = true;
             for (int i = 0; i < _reverse.Length; i++)
                 _reverse[i].Checked = _edit.ReverseAxis[i];
+            _loadingValues = false;
             _startStep.Checked = _edit.StartInStepMode;
             _mainThread.Checked = _edit.RunOnMainThread;
             _mirrorMpg.Checked = _edit.MirrorMpgButtons;
@@ -536,6 +541,21 @@ namespace Plugins
             if (d < n.Minimum) return n.Minimum;
             if (d > n.Maximum) return n.Maximum;
             return d;
+        }
+
+        private bool _loadingValues;
+
+        private void ApplyReverse(int axis)
+        {
+            if (_loadingValues) return;
+            bool on = _reverse[axis].Checked;
+            _edit.ReverseAxis[axis] = on;
+            var live = _controller.Settings;
+            if (live.ReverseAxis[axis] == on) return;
+            live.ReverseAxis[axis] = on;
+            try { live.SaveReverse(_uc, axis); }
+            catch (Exception ex) { _log.Write("Saving 'Reverse " + PendantSettings.AxisNames[axis] + "' failed: " + ex.Message); }
+            _log.Write("Reverse wheel " + PendantSettings.AxisNames[axis] + " " + (on ? "on" : "off") + " (applied to all jog modes)");
         }
 
         private void SaveValues()
