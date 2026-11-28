@@ -44,7 +44,10 @@ namespace Plugins
 
         // Smooth continuous jog (JogOnSpeed) and the stop safety net
         private int _jogAxis = -1;
-        private bool _jogDir;
+        private bool _jogDir;                   // intended direction (true = machine coordinate increases)
+        private bool _jogCmdDir;                // direction sent to UCCNC (differs when UCCNC's jog is inverted)
+        private double _jogStartPos;
+        private bool _jogDirChecked;
         private DateTime _lastClickUtc;
         private int _stopStage;                 // 0 = idle, 1 = stop sent, 2 = stop re-sent, 3 = Reset pressed
         private int _stopAxis = -1;
@@ -738,6 +741,8 @@ namespace Plugins
                 return;
             }
 
+            CheckJogDirection();
+
             if (delta != 0 && pct > 0)
             {
                 bool dir = delta > 0;
@@ -746,6 +751,14 @@ namespace Plugins
                 {
                     StopSmoothJog("direction or axis changed");   // the next clicks start the new direction
                     return;
+                }
+
+                bool[] inv = kind == JogKindButtons ? _settings.JogButtonInverted : _settings.MpgJogInverted;
+                bool cmdDir = (axisIndex >= 0 && axisIndex < inv.Length && inv[axisIndex]) ? !dir : dir;
+                if (_jogAxis < 0)
+                {
+                    _jogStartPos = MachinePos(axisIndex);
+                    _jogDirChecked = false;
                 }
 
                 if (kind == JogKindButtons)
@@ -757,19 +770,22 @@ namespace Plugins
                         // UCCNC's own jog, exactly like holding a jog arrow: Continous jog mode, then "jog on".
                         int contBtn = _catalog != null && _catalog.JogContinuous >= 0 ? _catalog.JogContinuous : 161;
                         _uc.Callbutton(contBtn);
-                        int onBtn = 147 + axisIndex * 2 + (dir ? 0 : 1);
+                        int onBtn = 147 + axisIndex * 2 + (cmdDir ? 0 : 1);
                         _uc.Callbutton(onBtn);
-                        RecordJog(string.Format(CultureInfo.InvariantCulture, "UCCNC jog button {0} (axis {1}, {2}) at jog feed {3}%", onBtn, axisIndex, dir ? "+" : "-", pct));
+                        RecordJog(string.Format(CultureInfo.InvariantCulture, "UCCNC jog button {0} (axis {1}, {2}{3}) at jog feed {4}%", onBtn, axisIndex, dir ? "+" : "-",
+                            cmdDir != dir ? ", UCCNC jog inverted on this axis" : "", pct));
                     }
                 }
                 else
                 {
-                    int rc = _uc.JogOnSpeed(axisIndex, dir, pct);
+                    int rc = _uc.JogOnSpeed(axisIndex, cmdDir, pct);
                     if (_jogAxis < 0)
-                        RecordJog(string.Format(CultureInfo.InvariantCulture, "JogOnSpeed(axis {0}, {1}, {2}%) = {3} (MPG jog start)", axisIndex, dir ? "+" : "-", pct, rc));
+                        RecordJog(string.Format(CultureInfo.InvariantCulture, "JogOnSpeed(axis {0}, {1}{2}, {3}%) = {4} (MPG jog start)", axisIndex, dir ? "+" : "-",
+                            cmdDir != dir ? ", inverted on this axis" : "", pct, rc));
                 }
                 _jogAxis = axisIndex;
                 _jogDir = dir;
+                _jogCmdDir = cmdDir;
                 _jogPct = pct;
                 _jogKind = kind;
                 _lastClickUtc = now;
@@ -780,13 +796,42 @@ namespace Plugins
             }
         }
 
+        /// <summary>
+        /// UCCNC's own jog (the jog buttons, keyboard and MPG jog) can be set to move an axis the
+        /// other way than its machine coordinate (e.g. a StepCraft profile), while the plugin's step
+        /// moves always go by machine coordinate. So the first part of every smooth jog is checked:
+        /// if the machine coordinate moves opposite to the intended direction, the jog is stopped at
+        /// once, the axis is marked as inverted for that jog method (saved in the profile), and the
+        /// next wheel click jogs the right way. Self-correcting if UCCNC's setting changes later.
+        /// </summary>
+        private void CheckJogDirection()
+        {
+            if (_jogAxis < 0 || _jogDirChecked) return;
+            double moved = MachinePos(_jogAxis) - _jogStartPos;
+            if (Math.Abs(moved) < 0.02) return;      // not far enough to tell yet
+            _jogDirChecked = true;
+            if ((moved > 0) == _jogDir) return;     // right way
+
+            int axis = _jogAxis;
+            bool[] inv = _jogKind == JogKindButtons ? _settings.JogButtonInverted : _settings.MpgJogInverted;
+            if (axis < inv.Length)
+            {
+                inv[axis] = !inv[axis];
+                try { _settings.SaveJogInversion(_uc); } catch (Exception ex) { _log.Write("Saving the jog direction failed: " + ex.Message); }
+            }
+            StopSmoothJog("wrong direction");
+            _log.Write(string.Format(CultureInfo.InvariantCulture,
+                "UCCNC's {0} moved axis {1} the other way ({2:0.###} instead of {3}). Stopped; this axis now uses the opposite {0} direction (saved).",
+                _jogKind == JogKindButtons ? "jog button" : "MPG jog", PendantSettings.AxisNames[axis], moved, _jogDir ? "+" : "-"));
+        }
+
         private void StopSmoothJog(string reason)
         {
             int axis = _jogAxis;
             if (axis < 0) return;
             _jogAxis = -1;
             _stopAxis = axis;
-            _stopDir = _jogDir;
+            _stopDir = _jogCmdDir;                  // the button that was pressed, so the matching "off" button
             _stopPct = _jogPct;
             _stopUtc = DateTime.UtcNow;
             _stopLastMoveUtc = _stopUtc;

@@ -576,6 +576,8 @@ namespace Plugins
             _edit.ContinuousEngine = (ContinuousEngines)Math.Max(0, _engine.SelectedIndex);
             _edit.JogFeedField = _controller.Settings.JogFeedField;       // found while the window was open
             _edit.JogFeedFieldAS3 = _controller.Settings.JogFeedFieldAS3;
+            _edit.JogButtonInverted = (bool[])_controller.Settings.JogButtonInverted.Clone();   // learned while jogging
+            _edit.MpgJogInverted = (bool[])_controller.Settings.MpgJogInverted.Clone();
             _edit.SmoothContinuous = _edit.ContinuousEngine != ContinuousEngines.ShortMoves;
             _edit.ContinuousStopMs = (int)_stopMs.Value;
             _edit.WindowOnTop = _onTop.Checked;

@@ -77,6 +77,13 @@ Stop. **Every stop is checked against the machine position.** If the axis is sti
 after 0.3 s (0.5 s at 100 % speed), the MPG stop is sent too, and after 0.8 s (1.0 s at
 100 %) the plugin presses UCCNC **Reset**. With **UCCNC jog**, the MPG family (MPG key) uses short moves, since UCCNC's own jog buttons do nothing in MPG mode.
 
+**Jog direction:** a UCCNC profile can make UCCNC's own jog (jog buttons, keyboard, MPG jog)
+move an axis opposite to its machine coordinate, while the plugin's step moves always follow the
+machine coordinate. So with **UCCNC jog** or **MPG jog**, the start of every jog is checked against
+the machine position. If the axis moves the wrong way, the jog stops at once (after about 0.02 mm),
+the plugin remembers that axis as inverted (saved in the profile) and the next wheel click goes the
+right way. Step mode and continuous mode then always move the same way for the same wheel direction.
+
 With **UCCNC jog**, the first time continuous mode is used, the plugin finds UCCNC's *Jog feed %* field by
 pressing UCCNC's "increase jog rate" and "decrease jog rate" buttons once and noting which
 field changed (about 2 s, the wheel is ignored meanwhile). The result is saved.

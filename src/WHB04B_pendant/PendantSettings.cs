@@ -44,6 +44,13 @@ namespace Plugins
         /// </summary>
         public bool[] ReverseAxis = { false, false, false, false, false, false };
 
+        /// <summary>
+        /// Learned per axis: UCCNC's jog buttons / MPG jog move this axis opposite to its machine
+        /// coordinate (a jog-direction setting in the UCCNC profile). Found by watching the position.
+        /// </summary>
+        public bool[] JogButtonInverted = new bool[6];
+        public bool[] MpgJogInverted = new bool[6];
+
         public static readonly string[] AxisNames = { "X", "Y", "Z", "A", "B", "C" };
 
         /// <summary>Run all UCCNC calls on UCCNC's main window thread (what the UCR201 plugin does).</summary>
@@ -136,6 +143,8 @@ namespace Plugins
         {
             var c = (PendantSettings)MemberwiseClone();
             c.ReverseAxis = (bool[])ReverseAxis.Clone();
+            c.JogButtonInverted = (bool[])JogButtonInverted.Clone();
+            c.MpgJogInverted = (bool[])MpgJogInverted.Clone();
             c.Keys = new List<KeyBinding>();
             foreach (var k in Keys)
                 c.Keys.Add(new KeyBinding { Key = k.Key, Name = k.Name, Action = k.Action, FnAction = k.FnAction });
@@ -152,6 +161,11 @@ namespace Plugins
                 s.DebugLog = ReadBool(uc, "DebugLog", s.DebugLog);
                 for (int i = 0; i < s.ReverseAxis.Length; i++)
                     s.ReverseAxis[i] = ReadBool(uc, "Reverse" + AxisNames[i], s.ReverseAxis[i]);
+                for (int i = 0; i < AxisNames.Length; i++)
+                {
+                    s.JogButtonInverted[i] = ReadBool(uc, "JogButtonInverted" + AxisNames[i], false);
+                    s.MpgJogInverted[i] = ReadBool(uc, "MpgJogInverted" + AxisNames[i], false);
+                }
                 s.RunOnMainThread = ReadBool(uc, "RunOnMainThread", s.RunOnMainThread);
                 s.WindowOnTop = ReadBool(uc, "WindowOnTop", s.WindowOnTop);
                 s.SmoothContinuous = ReadBool(uc, "SmoothContinuous", s.SmoothContinuous);
@@ -279,6 +293,7 @@ namespace Plugins
             Write(uc, "ContinuousEngine", ((int)ContinuousEngine).ToString(CultureInfo.InvariantCulture));
             Write(uc, "JogFeedField", JogFeedField.ToString(CultureInfo.InvariantCulture));
             Write(uc, "JogFeedFieldAS3", JogFeedFieldAS3 ? "1" : "0");
+            SaveJogInversion(uc);
             Write(uc, "MirrorMpgButtons", MirrorMpgButtons ? "1" : "0");
             Write(uc, "MirrorOnScreen", MirrorOnScreen ? "1" : "0");
             Write(uc, "ChecksumMode", ((int)Checksum).ToString(CultureInfo.InvariantCulture));
@@ -304,6 +319,15 @@ namespace Plugins
         public void SaveReverse(Plugininterface.Entry uc, int axis)
         {
             Write(uc, "Reverse" + AxisNames[axis], ReverseAxis[axis] ? "1" : "0");
+        }
+
+        public void SaveJogInversion(Plugininterface.Entry uc)
+        {
+            for (int i = 0; i < AxisNames.Length; i++)
+            {
+                Write(uc, "JogButtonInverted" + AxisNames[i], JogButtonInverted[i] ? "1" : "0");
+                Write(uc, "MpgJogInverted" + AxisNames[i], MpgJogInverted[i] ? "1" : "0");
+            }
         }
 
         public void SaveJogFeedField(Plugininterface.Entry uc)
