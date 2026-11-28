@@ -34,7 +34,7 @@ This was read from the .NET metadata and IL of the stock UCCNC plugins in
 ```
 int    JogOnSpeed(int axis, bool direction, double speedPercent)   // speed 0 stops the jog
 int    MPGJogOff(int axis)
-int    AddLinearMoveRel(int axis, double distance, int count, double speedPercent, bool direction)
+int    AddLinearMoveRel(int axis, double distance, int count, double speedPercent, bool direction)   // direction: true = NEGATIVE (machine coordinate decreases), found in testing
 bool   GetLED(int number)
 void   Callbutton(int code)
 void   Code(string gcode)

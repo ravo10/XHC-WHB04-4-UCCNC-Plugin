@@ -467,11 +467,13 @@ namespace Plugins
 
             var s = _settings;
             int axisIndex = (int)axis - 1; // X=0 .. C=5
-            // The pendant counts clockwise as negative relative to UCCNC's axes (the stock HB04 plugin
-            // flips it too), so the wheel is flipped by default; "Reverse" flips it back per axis.
+            // From here on, delta > 0 means "the machine coordinate increases", in every mode.
+            // (Until v0.5.6 the step moves used the opposite meaning because AddLinearMoveRel's
+            // direction flag is true = NEGATIVE; the defaults below keep step mode moving exactly
+            // as before, and continuous mode now matches it.) "Reverse" flips an axis.
             int rawDelta = delta;
             bool reversed = axisIndex >= 0 && axisIndex < s.ReverseAxis.Length && s.ReverseAxis[axisIndex];
-            delta = reversed ? delta : -delta;
+            delta = reversed ? -delta : delta;
             if (delta != 0)
             {
                 _lastWheelInfo = (delta > 0 ? "+" : "") + delta + (reversed ? " (reversed)" : "") + " at " + DateTime.Now.ToString("HH:mm:ss");
@@ -559,7 +561,7 @@ namespace Plugins
             double distPerMotorStep = MotorStepDistance(axisIndex);
             if (distPerMotorStep <= 0)
             {
-                int rc0 = _uc.AddLinearMoveRel(axisIndex, step, Math.Abs(delta), s.StepSpeedPercent, delta > 0);
+                int rc0 = _uc.AddLinearMoveRel(axisIndex, step, Math.Abs(delta), s.StepSpeedPercent, delta < 0); // true = negative
                 RecordJog(string.Format(CultureInfo.InvariantCulture, "AddLinearMoveRel(axis {0}, {1} x {2}, {3}%, {4}) = {5} [steps/unit unknown]", axisIndex, step, Math.Abs(delta), s.StepSpeedPercent, delta > 0 ? "+" : "-", rc0));
                 return;
             }
@@ -573,7 +575,7 @@ namespace Plugins
                 return;
             }
             _stepRemainder -= motorSteps * distPerMotorStep;
-            int rc = _uc.AddLinearMoveRel(axisIndex, distPerMotorStep, Math.Abs(motorSteps), s.StepSpeedPercent, motorSteps > 0);
+            int rc = _uc.AddLinearMoveRel(axisIndex, distPerMotorStep, Math.Abs(motorSteps), s.StepSpeedPercent, motorSteps < 0); // true = negative
             RecordJog(string.Format(CultureInfo.InvariantCulture, "AddLinearMoveRel(axis {0}, {1} x {2} motor steps, {3}%, {4}) = {5}", axisIndex, distPerMotorStep, Math.Abs(motorSteps), s.StepSpeedPercent, motorSteps > 0 ? "+" : "-", rc));
         }
 
@@ -810,7 +812,12 @@ namespace Plugins
             double moved = MachinePos(_jogAxis) - _jogStartPos;
             if (Math.Abs(moved) < 0.02) return;      // not far enough to tell yet
             _jogDirChecked = true;
-            if ((moved > 0) == _jogDir) return;     // right way
+            if ((moved > 0) == _jogDir)               // right way
+            {
+                _log.Debug(string.Format(CultureInfo.InvariantCulture, "Jog direction OK: axis {0} moved {1:+0.###;-0.###}",
+                    PendantSettings.AxisNames[_jogAxis], moved));
+                return;
+            }
 
             int axis = _jogAxis;
             bool[] inv = _jogKind == JogKindButtons ? _settings.JogButtonInverted : _settings.MpgJogInverted;
